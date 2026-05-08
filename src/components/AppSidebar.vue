@@ -6,7 +6,7 @@
     <!-- Header -->
     <div class="flex items-center border-b h-[49px]" :class="collapsed ? 'justify-center' : 'px-3 gap-2'">
       <template v-if="!collapsed">
-        <KeyRound class="h-5 w-5 text-primary shrink-0" />
+        <img src="/logo.svg" class="h-5 w-5 shrink-0" alt="" />
         <span class="font-semibold text-sm truncate flex-1">Chamber UI</span>
       </template>
       <button
@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { KeyRound, ChevronLeft, ChevronRight, Search, Database, Loader2, LogOut, RefreshCw } from "lucide-vue-next";
+import { ChevronLeft, ChevronRight, Search, Database, Loader2, LogOut, RefreshCw } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

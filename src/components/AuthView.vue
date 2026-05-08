@@ -3,9 +3,7 @@
     <div class="w-full max-w-md space-y-6">
       <div class="space-y-2 text-center">
         <div class="flex justify-center">
-          <div class="rounded-xl bg-primary/10 p-3">
-            <KeyRound class="h-8 w-8 text-primary" />
-          </div>
+          <img src="/logo.svg" class="h-16 w-16" alt="Chamber UI" />
         </div>
         <h1 class="text-2xl font-bold tracking-tight">Chamber UI</h1>
         <p class="text-sm text-muted-foreground">Connect to AWS to manage your secrets</p>
@@ -84,7 +82,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { KeyRound, LogIn, Loader2, Globe } from "lucide-vue-next";
+import { LogIn, Loader2, Globe } from "lucide-vue-next";
 import { useChamberStore } from "@/stores/chamber";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
