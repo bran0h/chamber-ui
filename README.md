@@ -1,12 +1,23 @@
 # Chamber UI
 
 <p align="center">
-  <img src="public/logo.svg" width="80" alt="Chamber UI logo" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="public/logo.svg">
+    <img src="public/logo.svg" width="80" alt="Chamber UI logo" />
+  </picture>
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A native desktop app for managing AWS SSM Parameter Store secrets through the [chamber](https://github.com/segmentio/chamber) CLI — with a clean, keyboard-friendly interface built on Tauri 2, Vue 3, and shadcn-vue.
+
+## Screenshots
+
+<p align="center">
+  <img src="public/screen-login.png" width="480" alt="Login screen" />
+  <img src="public/screen-service.png" width="480" alt="Secrets view" />
+</p>
 
 ## What it does
 
