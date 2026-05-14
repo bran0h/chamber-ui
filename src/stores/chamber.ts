@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 
+const SERVICE_ALIASES_KEY = "chamber-ui.serviceAliases";
+
 export interface Secret {
   key: string;
   value: string;
@@ -27,6 +29,41 @@ export const useChamberStore = defineStore("chamber", () => {
   const services = ref<string[]>([]);
   const loading = ref(false);
   const error = ref("");
+  const serviceAliases = ref<Record<string, string>>({});
+
+  function loadServiceAliases() {
+    try {
+      const raw = localStorage.getItem(SERVICE_ALIASES_KEY);
+      serviceAliases.value = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      serviceAliases.value = {};
+    }
+  }
+
+  function persistServiceAliases() {
+    localStorage.setItem(SERVICE_ALIASES_KEY, JSON.stringify(serviceAliases.value));
+  }
+
+  /** Shown name in UI (sidebar, tabs); chamber service path stays the real id. */
+  function serviceLabel(service: string): string {
+    const a = serviceAliases.value[service];
+    return a?.trim() ? a : service;
+  }
+
+  function customAliasFor(service: string): string {
+    return serviceAliases.value[service] ?? "";
+  }
+
+  function setServiceAlias(service: string, alias: string) {
+    const t = alias.trim();
+    const next = { ...serviceAliases.value };
+    if (!t) delete next[service];
+    else next[service] = t;
+    serviceAliases.value = next;
+    persistServiceAliases();
+  }
+
+  loadServiceAliases();
 
   // Tab state
   const tabs = ref<Tab[]>([]);
@@ -326,5 +363,8 @@ export const useChamberStore = defineStore("chamber", () => {
     deleteSecret,
     exportEnv,
     logout,
+    serviceLabel,
+    customAliasFor,
+    setServiceAlias,
   };
 });

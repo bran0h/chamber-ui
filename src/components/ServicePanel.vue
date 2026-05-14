@@ -14,6 +14,7 @@
     <template v-else>
       <SecretsHeader
         :service="tab.service"
+        :display-name="store.serviceLabel(tab.service)"
         :count="tab.secrets.length"
         :loading="tab.loading"
         :reveal-all="revealAll"

@@ -3,7 +3,7 @@
     class="flex items-center justify-between border-b px-4 py-3 bg-card shrink-0 gap-3 min-w-0"
   >
     <div class="min-w-0 flex-1">
-      <h2 class="font-semibold truncate" :title="service">{{ service }}</h2>
+      <h2 class="truncate font-semibold" :title="service">{{ displayName }}</h2>
       <p class="text-xs text-muted-foreground">
         <span
           v-if="loading"
@@ -84,6 +84,7 @@ import {
 
 defineProps<{
   service: string;
+  displayName: string;
   count: number;
   loading: boolean;
   revealAll: boolean;

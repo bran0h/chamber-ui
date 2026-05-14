@@ -21,5 +21,6 @@ const store = useChamberStore();
 const { init } = useTheme();
 const settingsOpen = ref(false);
 
+
 onMounted(init);
 </script>

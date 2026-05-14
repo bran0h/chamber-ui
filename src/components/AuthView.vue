@@ -1,12 +1,18 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-background p-6">
-    <button
-      class="absolute top-3 right-3 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-      @click="$emit('open-settings')"
-    >
-      <Settings class="h-4 w-4" />
-    </button>
-    <div class="w-full max-w-md space-y-6">
+  <div class="ch-tauri-root flex h-screen min-h-0 flex-col overflow-hidden">
+    <div class="flex h-9 shrink-0 items-center gap-1 border-b bg-card px-1 pr-2">
+      <div class="min-h-9 min-w-0 flex-1 self-stretch" data-tauri-drag-region />
+      <WindowTitleControls />
+      <button
+        type="button"
+        class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        @click="$emit('open-settings')"
+      >
+        <Settings class="h-4 w-4" />
+      </button>
+    </div>
+    <div class="relative flex min-h-0 flex-1 items-center justify-center bg-background p-6">
+      <div class="w-full max-w-md space-y-6">
       <div class="space-y-2 text-center select-none pointer-events-none">
         <div class="flex justify-center">
           <img src="/logo.svg" class="h-16 w-16 dark:invert" alt="Chamber UI" />
@@ -83,6 +89,7 @@
         </CardContent>
       </Card>
     </div>
+    </div>
   </div>
 </template>
 
@@ -100,6 +107,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import WindowTitleControls from "@/components/WindowTitleControls.vue";
 
 const regions = [
   { value: "us-east-1",      label: "us-east-1 — US East (N. Virginia)" },

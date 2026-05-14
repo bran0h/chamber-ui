@@ -56,4 +56,45 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Frameless Tauri: let the OS show through outside the rounded shell */
+  html.ch-tauri-chrome,
+  html.ch-tauri-chrome body,
+  html.ch-tauri-chrome body > #app {
+    background-color: transparent;
+  }
+}
+
+@layer components {
+  .ch-sidebar .ch-sidebar-titlebar {
+    background-color: hsl(var(--card));
+  }
+
+  /*
+   * Rounded shell for borderless windows (~11pt ≈ native macOS utility windows).
+   * Fullscreen: no radius (class toggled from tauri-window-chrome.ts).
+   */
+  html.ch-tauri-chrome .ch-tauri-root {
+    box-sizing: border-box;
+    border-radius: 11px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px hsl(var(--border) / 0.45),
+      0 10px 40px rgb(0 0 0 / 0.18);
+  }
+
+  html.ch-tauri-chrome.ch-tauri-fullscreen .ch-tauri-root {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+@layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
