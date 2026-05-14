@@ -77,12 +77,15 @@
   html.ch-tauri-chrome {
     height: 100%;
     overflow: hidden;
+    background-color: transparent;
   }
 
   html.ch-tauri-chrome body {
     height: 100%;
     margin: 0;
     overflow: hidden;
+    /* Must override base body bg: opaque body fills the square webview and hides rounded corners */
+    background-color: transparent;
   }
 
   html.ch-tauri-chrome body > #app {

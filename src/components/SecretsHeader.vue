@@ -13,7 +13,7 @@
       </p>
     </div>
 
-    <div class="flex items-center gap-1.5 shrink-0">
+    <div class="flex items-center gap-2 shrink-0">
       <Tooltip>
         <TooltipTrigger as-child>
           <Button

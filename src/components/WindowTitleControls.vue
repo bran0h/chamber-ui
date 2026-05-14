@@ -56,6 +56,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { syncTauriFullscreenChromeClass } from "@/tauri-window-chrome";
 
 const isTauri =
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -98,6 +99,7 @@ function onWindowResize() {
 
 onMounted(async () => {
   await syncZoomState();
+  await syncTauriFullscreenChromeClass();
   if (useNativeFullscreen) window.addEventListener("resize", onWindowResize);
 });
 
@@ -125,6 +127,7 @@ async function toggleZoom() {
       await w.toggleMaximize();
       zoomed.value = await w.isMaximized();
     }
+    await syncTauriFullscreenChromeClass();
   } catch {
     /* ignore */
   }

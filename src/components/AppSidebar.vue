@@ -1,7 +1,12 @@
 <template>
-  <aside
-    class="ch-sidebar flex shrink-0 flex-col overflow-hidden border-r border-border bg-transparent transition-all duration-200 ease-in-out"
-    :class="collapsed ? 'sidebar-narrow w-12' : 'w-64'">
+<aside
+    class="ch-sidebar relative flex shrink-0 flex-col overflow-hidden border-r border-border bg-transparent"
+    :class="[
+      collapsed ? 'sidebar-narrow' : '',
+      isResizing ? '' : 'transition-[width] duration-200 ease-in-out',
+    ]"
+    :style="{ width: (collapsed ? COLLAPSED_PX : expandedWidthPx) + 'px' }"
+  >
     <!-- Header: drag on elements that receive the pointer (Tauri hit-tests target node) -->
     <div
       class="ch-sidebar-titlebar flex h-[49px] shrink-0 select-none items-center border-b border-border px-3"
@@ -21,7 +26,7 @@
           type="button"
           class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           data-tauri-drag-region="false"
-          @click="collapsed = !collapsed"
+          @click="toggleSidebarCollapsed"
         >
           <ChevronLeft class="h-4 w-4" />
         </button>
@@ -32,7 +37,7 @@
           type="button"
           class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           data-tauri-drag-region="false"
-          @click="collapsed = !collapsed"
+          @click="toggleSidebarCollapsed"
         >
           <ChevronRight class="h-4 w-4" />
         </button>
@@ -66,7 +71,7 @@
       <div
         v-for="svc in filteredServices"
         :key="svc"
-        class="flex w-full items-center rounded-md text-sm transition-colors"
+        class="flex w-full items-center gap-1 rounded-md text-sm transition-colors"
         :class="
           selectedService === svc
             ? 'bg-primary font-medium text-primary-foreground'
@@ -185,11 +190,22 @@
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <!-- Resize handle (max width = 50% window; drag past threshold collapses to rail) -->
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize sidebar"
+      tabindex="-1"
+      class="absolute right-0 top-0 z-20 h-full w-3 max-w-[12px] translate-x-1/2 cursor-col-resize touch-none hover:bg-primary/25"
+      data-tauri-drag-region="false"
+      @mousedown.prevent="startSidebarResize"
+    />
   </aside>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import {
   ChevronLeft,
   ChevronRight,
@@ -248,7 +264,17 @@ defineEmits<{
 
 const store = useChamberStore();
 
+/** px */
+const COLLAPSED_PX = 48;
+const MIN_EXPANDED_PX = 200;
+/** Below this width while dragging → collapse to rail */
+const SNAP_COLLAPSE_BELOW = 168;
+const DEFAULT_EXPANDED_PX = 256;
+const SIDEBAR_PREFS_KEY = "chamber-ui.sidebar";
+
 const collapsed = ref(false);
+const expandedWidthPx = ref(DEFAULT_EXPANDED_PX);
+const isResizing = ref(false);
 const serviceSearch = ref("");
 
 const aliasOpen = ref(false);
@@ -290,7 +316,90 @@ function saveAlias() {
 function clearAlias() {
   if (!aliasTargetService.value) return;
   store.setServiceAlias(aliasTargetService.value, "");
-  aliasDraft.value = "";
   aliasOpen.value = false;
 }
+
+function maxSidebarPx(): number {
+  return Math.max(MIN_EXPANDED_PX, Math.floor(window.innerWidth * 0.5));
+}
+
+function clampExpanded(w: number): number {
+  return Math.round(Math.max(MIN_EXPANDED_PX, Math.min(maxSidebarPx(), w)));
+}
+
+function clampStoredWidthToWindow(): void {
+  expandedWidthPx.value = clampExpanded(expandedWidthPx.value);
+}
+
+function persistSidebarPrefs(): void {
+  try {
+    localStorage.setItem(
+      SIDEBAR_PREFS_KEY,
+      JSON.stringify({
+        collapsed: collapsed.value,
+        expandedWidthPx: expandedWidthPx.value,
+      }),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+function toggleSidebarCollapsed(): void {
+  collapsed.value = !collapsed.value;
+  persistSidebarPrefs();
+}
+
+function loadSidebarPrefs(): void {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_PREFS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw) as { collapsed?: boolean; expandedWidthPx?: number };
+    if (typeof o.expandedWidthPx === "number" && Number.isFinite(o.expandedWidthPx)) {
+      expandedWidthPx.value = clampExpanded(o.expandedWidthPx);
+    }
+    if (typeof o.collapsed === "boolean") collapsed.value = o.collapsed;
+  } catch {
+    /* ignore */
+  }
+}
+
+function startSidebarResize(downEvent: MouseEvent) {
+  isResizing.value = true;
+  const startX = downEvent.clientX;
+  const startW = collapsed.value ? COLLAPSED_PX : expandedWidthPx.value;
+
+  const onMove = (e: MouseEvent) => {
+    const w = startW + (e.clientX - startX);
+    if (w < SNAP_COLLAPSE_BELOW) {
+      collapsed.value = true;
+    } else {
+      collapsed.value = false;
+      expandedWidthPx.value = clampExpanded(Math.min(w, maxSidebarPx()));
+    }
+  };
+
+  const onUp = () => {
+    isResizing.value = false;
+    persistSidebarPrefs();
+    document.body.style.removeProperty("cursor");
+    document.body.style.removeProperty("user-select");
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+  };
+
+  document.body.style.cursor = "col-resize";
+  document.body.style.userSelect = "none";
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
+}
+
+onMounted(() => {
+  loadSidebarPrefs();
+  window.addEventListener("resize", clampStoredWidthToWindow);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", clampStoredWidthToWindow);
+});
 </script>

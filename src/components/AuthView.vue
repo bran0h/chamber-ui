@@ -1,5 +1,5 @@
 <template>
-  <div class="ch-tauri-root flex h-full min-h-0 flex-col overflow-hidden">
+  <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
     <div
       class="flex h-9 shrink-0 select-none items-center gap-1 border-b bg-card px-1 pr-2"
     >

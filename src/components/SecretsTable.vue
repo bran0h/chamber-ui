@@ -81,7 +81,7 @@
                 </div>
               </TableCell>
               <TableCell class="text-right">
-                <div class="flex items-center justify-end gap-0.5">
+                <div class="flex items-center justify-end gap-1">
                   <Tooltip>
                     <TooltipTrigger as-child>
                       <Button
