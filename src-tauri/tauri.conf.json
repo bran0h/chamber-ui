@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "chamber-ui",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "identifier": "com.bran0h.chamber-ui",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -37,7 +37,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhFNkE5RjlEN0Y2Njk2N0QKUldSOWxtWi9uWjlxamhiYjhZZXpneW1PcEMxSWY3UlNSNm9lc3BXWTUrZUhBbUJLaWU2T20yOG0K",
       "endpoints": [
-        "https://bc599eca90fbab8fb9e2097161292fcf.r2.cloudflarestorage.com/chamber-ui-builds/release/{{target}}/{{arch}}/latest.json"
+        "https://pub-87cf53a7856d47a0b362392ea5808282.r2.dev/release/{{target}}/{{arch}}/latest.json"
       ]
     }
   }
