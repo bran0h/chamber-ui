@@ -15,25 +15,40 @@
     </div>
 
     <!-- Table -->
-    <div class="flex-1 overflow-auto">
-      <Table class="min-w-[480px]">
+    <div ref="tableWrapRef" class="flex-1 overflow-auto">
+      <Table class="min-w-[480px] table-fixed">
+        <colgroup>
+          <col :style="{ width: keyColPercent + '%' }" />
+          <col />
+          <col style="width: 88px" />
+        </colgroup>
         <TableHeader>
           <TableRow>
-            <TableHead class="w-[40%]">Key</TableHead>
+            <TableHead class="relative">
+              <span class="pr-3">Key</span>
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize columns"
+                tabindex="-1"
+                class="absolute right-0 top-0 z-10 h-full w-3 max-w-[12px] -translate-x-1/2 cursor-col-resize touch-none hover:bg-primary/15"
+                @mousedown.prevent="startKeyColResize"
+              />
+            </TableHead>
             <TableHead>Value</TableHead>
-            <TableHead class="w-[88px] text-right">Actions</TableHead>
+            <TableHead class="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <!-- Skeleton -->
           <template v-if="loading">
             <TableRow v-for="i in 6" :key="i">
-              <TableCell
-                ><div class="h-4 w-40 rounded bg-muted animate-pulse"
-              /></TableCell>
-              <TableCell
-                ><div class="h-4 w-24 rounded bg-muted animate-pulse"
-              /></TableCell>
+              <TableCell class="max-w-0 overflow-hidden">
+                <div class="h-4 max-w-full rounded bg-muted animate-pulse" />
+              </TableCell>
+              <TableCell class="max-w-0 overflow-hidden">
+                <div class="h-4 max-w-full rounded bg-muted animate-pulse" />
+              </TableCell>
               <TableCell />
             </TableRow>
           </template>
@@ -45,12 +60,15 @@
               :key="secret.key"
               class="group"
             >
-              <TableCell class="font-mono text-sm font-medium">{{
-                secret.key
-              }}</TableCell>
-              <TableCell>
-                <div class="flex items-center gap-2 min-w-0">
-                  <span class="font-mono text-sm truncate">
+              <TableCell class="max-w-0 overflow-hidden font-mono text-sm font-medium">
+                <div class="truncate" :title="secret.key">{{ secret.key }}</div>
+              </TableCell>
+              <TableCell class="max-w-0 overflow-hidden">
+                <div class="flex min-w-0 items-center gap-2">
+                  <span
+                    class="min-w-0 flex-1 truncate font-mono text-sm"
+                    :title="revealed.has(secret.key) ? secret.value : ''"
+                  >
                     {{ revealed.has(secret.key) ? secret.value : "••••••••" }}
                   </span>
                   <button
@@ -132,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, nextTick } from "vue";
 import {
   Search,
   Eye,
@@ -171,8 +189,70 @@ defineEmits<{
   delete: [key: string];
 }>();
 
+const KEY_COL_STORAGE = "chamber-ui.secretsTable.keyColPct";
+const ACTIONS_COL_PX = 88;
+
 const search = ref("");
 const revealed = ref(new Set<string>());
+const tableWrapRef = ref<HTMLElement | null>(null);
+/** Width share for the Key column; Value fills the rest (Actions stays 88px). */
+const keyColPercent = ref(40);
+
+function clampKeyColPercent(pct: number, tableWidthPx: number): number {
+  if (tableWidthPx <= 0) return pct;
+  const actionsPct = (ACTIONS_COL_PX / tableWidthPx) * 100;
+  const minKey = 14;
+  const maxKey = Math.max(minKey + 1, 100 - actionsPct - 18);
+  return Math.round(Math.min(maxKey, Math.max(minKey, pct)));
+}
+
+onMounted(async () => {
+  await nextTick();
+  try {
+    const raw = localStorage.getItem(KEY_COL_STORAGE);
+    if (raw == null) return;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    const w =
+      tableWrapRef.value?.querySelector("table")?.getBoundingClientRect().width ?? 640;
+    keyColPercent.value = clampKeyColPercent(n, w);
+  } catch {
+    /* ignore */
+  }
+});
+
+watch(keyColPercent, (v) => {
+  try {
+    localStorage.setItem(KEY_COL_STORAGE, String(v));
+  } catch {
+    /* ignore */
+  }
+});
+
+function startKeyColResize(downEvent: MouseEvent) {
+  const table = tableWrapRef.value?.querySelector("table");
+  if (!table) return;
+  const startX = downEvent.clientX;
+  const startPct = keyColPercent.value;
+  const tableW = table.getBoundingClientRect().width;
+  if (tableW <= 0) return;
+
+  const onMove = (e: MouseEvent) => {
+    const dx = e.clientX - startX;
+    const deltaPct = (dx / tableW) * 100;
+    keyColPercent.value = clampKeyColPercent(startPct + deltaPct, tableW);
+  };
+  const onUp = () => {
+    document.body.style.removeProperty("cursor");
+    document.body.style.removeProperty("user-select");
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+  };
+  document.body.style.cursor = "col-resize";
+  document.body.style.userSelect = "none";
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
+}
 
 const filteredSecrets = computed(() =>
   search.value

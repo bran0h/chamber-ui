@@ -173,6 +173,38 @@ export const useChamberStore = defineStore("chamber", () => {
     }
   }
 
+  function ensureTabForService(service: string): Tab {
+    let tab = tabs.value.find((t) => t.service === service);
+    if (!tab) {
+      tab = { id: crypto.randomUUID(), service, secrets: [], loading: false };
+      tabs.value.push(tab);
+      void loadSecretsForTab(tab.id);
+    }
+    return tab;
+  }
+
+  /** Open or focus this service in the left (primary) tab strip panel. */
+  function openServiceInFirstPanel(service: string) {
+    const tab = ensureTabForService(service);
+    activeTabId.value = tab.id;
+    focusedSide.value = "left";
+  }
+
+  /** Open or focus this service in the right (split) panel; enables split view if needed. */
+  function openServiceInSecondPanel(service: string) {
+    const tab = ensureTabForService(service);
+    if (!activeTabId.value) {
+      activeTabId.value = tab.id;
+    }
+    if (!splitView.value) {
+      splitView.value = true;
+      splitTabId.value =
+        tabs.value.find((t) => t.id !== activeTabId.value)?.id ?? tab.id;
+    }
+    splitTabId.value = tab.id;
+    focusedSide.value = "right";
+  }
+
   function closeTab(tabId: string) {
     const idx = tabs.value.findIndex((t) => t.id === tabId);
     if (idx === -1) return;
@@ -354,6 +386,8 @@ export const useChamberStore = defineStore("chamber", () => {
     authenticate,
     loadServices,
     openTab,
+    openServiceInFirstPanel,
+    openServiceInSecondPanel,
     closeTab,
     setActiveTab,
     toggleSplit,

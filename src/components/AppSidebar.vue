@@ -63,17 +63,66 @@
         <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
 
-      <button v-for="svc in filteredServices" :key="svc"
-        class="w-full rounded-md text-sm text-left transition-colors flex items-center gap-2 px-3 py-2" :class="selectedService === svc
-          ? 'bg-primary text-primary-foreground font-medium'
-          : 'hover:bg-muted text-foreground'
-          " @click="$emit('select-service', svc)" @contextmenu.prevent="openAliasDialog(svc)">
-        <Database class="h-3.5 w-3.5 shrink-0" />
-        <span class="truncate flex-1" :title="svc">{{ store.serviceLabel(svc) }}</span>
-        <!-- Dot indicator: service is open as a tab but not currently selected -->
-        <span v-if="openServices.includes(svc) && selectedService !== svc"
-          class="h-1.5 w-1.5 rounded-full bg-primary/50 shrink-0" />
-      </button>
+      <div
+        v-for="svc in filteredServices"
+        :key="svc"
+        class="flex w-full items-center rounded-md text-sm transition-colors"
+        :class="
+          selectedService === svc
+            ? 'bg-primary font-medium text-primary-foreground'
+            : 'text-foreground hover:bg-muted'
+        "
+        @contextmenu.prevent="onServiceRowContextMenu(svc)"
+      >
+        <button
+          type="button"
+          class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left"
+          @click="$emit('select-service', svc)"
+        >
+          <Database class="h-3.5 w-3.5 shrink-0" />
+          <span class="truncate" :title="svc">{{ store.serviceLabel(svc) }}</span>
+          <span
+            v-if="openServices.includes(svc) && selectedService !== svc"
+            class="h-1.5 w-1.5 shrink-0 rounded-full bg-primary/50"
+          />
+        </button>
+        <DropdownMenu
+          :open="serviceActionsMenuFor === svc"
+          @update:open="(v) => setServiceActionsMenuOpen(svc, v)"
+        >
+          <DropdownMenuTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8 shrink-0 text-inherit opacity-80 hover:opacity-100"
+              :class="
+                selectedService === svc
+                  ? 'hover:bg-primary-foreground/15'
+                  : 'hover:bg-muted-foreground/15'
+              "
+              @click.stop
+            >
+              <MoreHorizontal class="h-4 w-4" />
+              <span class="sr-only">Actions for {{ store.serviceLabel(svc) }}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-56">
+            <DropdownMenuItem @click="openAliasDialog(svc)">
+              <Pencil class="h-4 w-4" />
+              Rename…
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem @click="store.openServiceInFirstPanel(svc)">
+              <PanelLeft class="h-4 w-4" />
+              Open in first tab
+            </DropdownMenuItem>
+            <DropdownMenuItem @click="store.openServiceInSecondPanel(svc)">
+              <PanelRight class="h-4 w-4" />
+              Open in second tab
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <div v-if="!loading && !filteredServices.length" class="px-2 py-2 text-xs text-muted-foreground">
         {{ serviceSearch ? "No matches" : "No services found" }}
@@ -120,9 +169,9 @@
     <Dialog v-model:open="aliasOpen">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Service alias</DialogTitle>
+          <DialogTitle>Rename service</DialogTitle>
           <DialogDescription>
-            Optional short name for this service. The real chamber path stays the same.
+            Optional display name. The chamber path does not change.
           </DialogDescription>
         </DialogHeader>
         <div class="space-y-2 py-2">
@@ -150,6 +199,10 @@ import {
   LogOut,
   RefreshCw,
   Settings,
+  MoreHorizontal,
+  Pencil,
+  PanelLeft,
+  PanelRight,
 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,6 +220,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useChamberStore } from "@/stores/chamber";
 
 const props = defineProps<{
@@ -194,6 +254,17 @@ const serviceSearch = ref("");
 const aliasOpen = ref(false);
 const aliasTargetService = ref("");
 const aliasDraft = ref("");
+/** Which service row has the ⋯ / actions menu open (also opened via right-click). */
+const serviceActionsMenuFor = ref<string | null>(null);
+
+function setServiceActionsMenuOpen(service: string, open: boolean) {
+  if (open) serviceActionsMenuFor.value = service;
+  else if (serviceActionsMenuFor.value === service) serviceActionsMenuFor.value = null;
+}
+
+function onServiceRowContextMenu(service: string) {
+  serviceActionsMenuFor.value = service;
+}
 
 const filteredServices = computed(() => {
   const q = serviceSearch.value.trim().toLowerCase();
