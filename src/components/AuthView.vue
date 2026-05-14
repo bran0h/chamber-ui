@@ -7,7 +7,7 @@
       <Settings class="h-4 w-4" />
     </button>
     <div class="w-full max-w-md space-y-6">
-      <div class="space-y-2 text-center">
+      <div class="space-y-2 text-center select-none pointer-events-none">
         <div class="flex justify-center">
           <img src="/logo.svg" class="h-16 w-16 dark:invert" alt="Chamber UI" />
         </div>

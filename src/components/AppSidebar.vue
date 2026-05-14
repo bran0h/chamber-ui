@@ -9,8 +9,8 @@
       :class="collapsed ? 'justify-center' : 'px-3 gap-2'"
     >
       <template v-if="!collapsed">
-        <img src="/logo.svg" class="h-5 w-5 shrink-0" alt="" />
-        <span class="font-semibold text-sm truncate flex-1">Chamber UI</span>
+        <img src="/logo.svg" class="h-5 w-5 shrink-0 dark:invert pointer-events-none" alt="" />
+        <span class="font-semibold text-sm truncate flex-1 select-none pointer-events-none">Chamber UI</span>
       </template>
       <button
         class="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
