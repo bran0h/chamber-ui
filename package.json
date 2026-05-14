@@ -1,7 +1,7 @@
 {
   "name": "chamber-ui",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": {
     "name": "bran0h",
     "url": "https://hozza.dev"
@@ -12,7 +12,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "mock:updated": "node scripts/mock-update-server.mjs"
+    "mock:updated": "node scripts/mock-update-server.mjs",
+    "version:bump": "node scripts/bump-version.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

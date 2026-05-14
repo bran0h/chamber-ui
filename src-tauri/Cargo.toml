@@ -1,6 +1,6 @@
 [package]
 name = "chamber-ui"
-version = "1.2.1"
+version = "1.2.2"
 description = "Chamber CLI UI wrapper"
 authors = ["bran0h"]
 edition = "2021"

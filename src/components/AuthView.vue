@@ -9,7 +9,7 @@
     <div class="w-full max-w-md space-y-6">
       <div class="space-y-2 text-center">
         <div class="flex justify-center">
-          <img src="/logo.svg" class="h-16 w-16" alt="Chamber UI" />
+          <img src="/logo.svg" class="h-16 w-16 dark:invert" alt="Chamber UI" />
         </div>
         <h1 class="text-2xl font-bold tracking-tight">Chamber UI</h1>
         <p class="text-sm text-muted-foreground">Connect to AWS to manage your secrets</p>
