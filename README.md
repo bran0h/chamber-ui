@@ -1,23 +1,12 @@
-# Chamber UI
-
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="public/logo.svg">
-    <img src="public/logo.svg" width="80" alt="Chamber UI logo" />
-  </picture>
+  <img src="public/title.png" width="920" alt="Chamber UI — main window" />
 </p>
+
+# Chamber UI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A native desktop app for managing AWS SSM Parameter Store secrets through the [chamber](https://github.com/segmentio/chamber) CLI — with a clean, keyboard-friendly interface built on Tauri 2, Vue 3, and shadcn-vue.
-
-## Screenshots
-
-<p align="center">
-  <img src="public/screen-login.png" width="480" alt="Login screen" />
-  <img src="public/screen-service.png" width="480" alt="Secrets view" />
-</p>
 
 ## What it does
 
@@ -30,13 +19,13 @@ A native desktop app for managing AWS SSM Parameter Store secrets through the [c
 
 ## Requirements
 
-| Tool | Version |
-|------|---------|
-| [Node.js](https://nodejs.org) | 18+ |
-| [Rust](https://rustup.rs) | stable |
-| [Tauri CLI prerequisites](https://tauri.app/start/prerequisites/) | macOS / Linux / Windows |
-| [chamber](https://github.com/segmentio/chamber) | any recent version |
-| AWS credentials | profile in `~/.aws/config` or environment variables |
+| Tool                                                              | Version                                             |
+| ----------------------------------------------------------------- | --------------------------------------------------- |
+| [Node.js](https://nodejs.org)                                     | 18+                                                 |
+| [Rust](https://rustup.rs)                                         | stable                                              |
+| [Tauri CLI prerequisites](https://tauri.app/start/prerequisites/) | macOS / Linux / Windows                             |
+| [chamber](https://github.com/segmentio/chamber)                   | any recent version                                  |
+| AWS credentials                                                   | profile in `~/.aws/config` or environment variables |
 
 Install chamber on macOS:
 
@@ -76,13 +65,13 @@ The first `tauri dev` or `tauri build` will compile the Rust backend — this ta
 
 ## Tech stack
 
-| Layer | Technology |
-|-------|-----------|
-| Desktop shell | [Tauri 2](https://tauri.app) (Rust) |
-| Frontend | [Vue 3](https://vuejs.org) + TypeScript + Vite |
-| UI components | [shadcn-vue](https://www.shadcn-vue.com) + Tailwind CSS |
-| State | [Pinia](https://pinia.vuejs.org) |
-| Icons | [Lucide](https://lucide.dev) |
+| Layer           | Technology                                                                |
+| --------------- | ------------------------------------------------------------------------- |
+| Desktop shell   | [Tauri 2](https://tauri.app) (Rust)                                       |
+| Frontend        | [Vue 3](https://vuejs.org) + TypeScript + Vite                            |
+| UI components   | [shadcn-vue](https://www.shadcn-vue.com) + Tailwind CSS                   |
+| State           | [Pinia](https://pinia.vuejs.org)                                          |
+| Icons           | [Lucide](https://lucide.dev)                                              |
 | Secrets backend | [chamber](https://github.com/segmentio/chamber) → AWS SSM Parameter Store |
 
 ## Project structure

@@ -1,6 +1,18 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import {
+  isChamberMock,
+  mockAuthenticatePayload,
+  mockDeleteSecret,
+  mockExportEnv,
+  mockListServicesPayload,
+  mockLoadProfilesPayload,
+  mockReadSecrets,
+  mockSsoLoginMessage,
+  mockWriteSecret,
+  resetMockSecretsCache,
+} from "@/mocks/chamberMock";
 
 const SERVICE_ALIASES_KEY = "chamber-ui.serviceAliases";
 
@@ -89,11 +101,24 @@ export const useChamberStore = defineStore("chamber", () => {
   });
 
   async function loadProfileRegion(profile: string) {
+    if (isChamberMock()) {
+      const p = mockLoadProfilesPayload();
+      if (profile === p.selectedProfile) region.value = p.region;
+      return;
+    }
     const r = await invoke<string | null>("get_profile_region", { profile });
     if (r) region.value = r;
   }
 
   async function loadProfiles() {
+    if (isChamberMock()) {
+      const p = mockLoadProfilesPayload();
+      profiles.value = p.profiles;
+      selectedProfile.value = p.selectedProfile;
+      region.value = p.region;
+      error.value = "";
+      return;
+    }
     try {
       profiles.value = await invoke<AwsProfile[]>("list_aws_profiles");
       if (profiles.value.length > 0 && !selectedProfile.value) {
@@ -109,6 +134,15 @@ export const useChamberStore = defineStore("chamber", () => {
   }
 
   async function ssoLogin(): Promise<string> {
+    if (isChamberMock()) {
+      loading.value = true;
+      error.value = "";
+      try {
+        return mockSsoLoginMessage();
+      } finally {
+        loading.value = false;
+      }
+    }
     loading.value = true;
     error.value = "";
     try {
@@ -125,6 +159,29 @@ export const useChamberStore = defineStore("chamber", () => {
   }
 
   async function authenticate() {
+    if (isChamberMock()) {
+      loading.value = true;
+      error.value = "";
+      try {
+        const m = mockAuthenticatePayload();
+        authAccount.value = m.authAccount;
+        isAuthenticated.value = true;
+        services.value = m.services;
+        serviceAliases.value = m.serviceAliases;
+        persistServiceAliases();
+        tabs.value = m.tabs;
+        activeTabId.value = m.activeTabId;
+        splitTabId.value = m.splitTabId;
+        splitView.value = m.splitView;
+        focusedSide.value = m.focusedSide;
+      } catch (e) {
+        error.value = String(e);
+        isAuthenticated.value = false;
+      } finally {
+        loading.value = false;
+      }
+      return;
+    }
     loading.value = true;
     error.value = "";
     try {
@@ -144,6 +201,16 @@ export const useChamberStore = defineStore("chamber", () => {
   }
 
   async function loadServices() {
+    if (isChamberMock()) {
+      loading.value = true;
+      error.value = "";
+      try {
+        services.value = mockListServicesPayload();
+      } finally {
+        loading.value = false;
+      }
+      return;
+    }
     loading.value = true;
     error.value = "";
     try {
@@ -261,11 +328,15 @@ export const useChamberStore = defineStore("chamber", () => {
     tab.loading = true;
     error.value = "";
     try {
-      tab.secrets = await invoke<Secret[]>("read_secrets", {
-        service: tab.service,
-        profile: selectedProfile.value,
-        region: region.value,
-      });
+      if (isChamberMock()) {
+        tab.secrets = mockReadSecrets(tab.service);
+      } else {
+        tab.secrets = await invoke<Secret[]>("read_secrets", {
+          service: tab.service,
+          profile: selectedProfile.value,
+          region: region.value,
+        });
+      }
     } catch (e) {
       error.value = String(e);
       tab.secrets = [];
@@ -278,6 +349,14 @@ export const useChamberStore = defineStore("chamber", () => {
     const tab = tabs.value.find((t) => t.id === tabId);
     if (!tab) return;
     error.value = "";
+    if (isChamberMock()) {
+      mockWriteSecret(tab.service, key, value);
+      await pollUntilCondition(
+        tabId,
+        (fresh) => fresh.find((s) => s.key === key)?.value === value,
+      );
+      return;
+    }
     await invoke("write_secret", {
       service: tab.service,
       key,
@@ -295,6 +374,11 @@ export const useChamberStore = defineStore("chamber", () => {
     const tab = tabs.value.find((t) => t.id === tabId);
     if (!tab) return;
     error.value = "";
+    if (isChamberMock()) {
+      mockDeleteSecret(tab.service, key);
+      await pollUntilCondition(tabId, (fresh) => !fresh.some((s) => s.key === key));
+      return;
+    }
     await invoke("delete_secret", {
       service: tab.service,
       key,
@@ -315,15 +399,28 @@ export const useChamberStore = defineStore("chamber", () => {
     const service = tab.service;
     tab.loading = true;
     try {
+      if (isChamberMock()) {
+        const fresh = mockReadSecrets(service);
+        if (check(fresh)) {
+          tab.secrets = fresh;
+          return;
+        }
+        tab.secrets = fresh;
+        throw new Error(
+          "Secret did not update after multiple retries — please refresh manually.",
+        );
+      }
       for (let i = 0; i < maxRetries; i++) {
         await new Promise((r) => setTimeout(r, intervalMs));
         const current = tabs.value.find((t) => t.id === tabId);
         if (!current || current.service !== service) return;
-        const fresh = await invoke<Secret[]>("read_secrets", {
-          service,
-          profile: selectedProfile.value,
-          region: region.value,
-        });
+        const fresh = isChamberMock()
+          ? mockReadSecrets(service)
+          : await invoke<Secret[]>("read_secrets", {
+              service,
+              profile: selectedProfile.value,
+              region: region.value,
+            });
         if (check(fresh)) {
           current.secrets = fresh;
           return;
@@ -344,6 +441,7 @@ export const useChamberStore = defineStore("chamber", () => {
   async function exportEnv(tabId: string): Promise<string> {
     const tab = tabs.value.find((t) => t.id === tabId);
     if (!tab) throw new Error("Tab not found");
+    if (isChamberMock()) return mockExportEnv(tab.service);
     return invoke<string>("export_env", {
       service: tab.service,
       profile: selectedProfile.value,
@@ -352,6 +450,7 @@ export const useChamberStore = defineStore("chamber", () => {
   }
 
   function logout() {
+    if (isChamberMock()) resetMockSecretsCache();
     isAuthenticated.value = false;
     authAccount.value = "";
     services.value = [];

@@ -47,7 +47,7 @@
     />
 
     <!-- Delete confirmation -->
-    <AlertDialog :open="!!deleteKey" @update:open="deleteKey = ''">
+    <AlertDialog :open="!!deleteKey" @update:open="onDeleteDialogOpenChange">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete secret</AlertDialogTitle>
@@ -62,7 +62,7 @@
           <AlertDialogAction
             class="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2"
             :disabled="deleting"
-            @click.prevent="doDelete"
+            @click="onConfirmDelete"
           >
             <Loader2 v-if="deleting" class="h-3.5 w-3.5 animate-spin" />
             Delete
@@ -128,11 +128,29 @@ function confirmDelete(key: string) {
   deleteKey.value = key;
 }
 
-async function doDelete() {
-  if (!props.tabId) return;
+/** AlertDialog closes first and was clearing deleteKey via @update:open before doDelete ran → empty key to Rust. */
+function onDeleteDialogOpenChange(open: boolean) {
+  if (!open) {
+    queueMicrotask(() => {
+      if (!deleting.value) {
+        deleteKey.value = "";
+      }
+    });
+  }
+}
+
+function onConfirmDelete(ev: MouseEvent) {
+  ev.preventDefault();
+  const key = deleteKey.value;
+  const tabId = props.tabId;
+  if (!tabId || !key) return;
+  void doDelete(tabId, key);
+}
+
+async function doDelete(tabId: string, key: string) {
   deleting.value = true;
   try {
-    await store.deleteSecret(props.tabId, deleteKey.value);
+    await store.deleteSecret(tabId, key);
     emit("toast", "Secret deleted");
   } catch (e) {
     emit("toast", String(e), "error");

@@ -1,0 +1,212 @@
+{
+  "meta": {
+    "purpose": "Design reference + optional dev mock when VITE_CHAMBER_MOCK=true (see .env.mock.example).",
+    "appName": "Chamber UI",
+    "suggestedWindowSize": { "width": 960, "height": 640 }
+  },
+  "authScreen": {
+    "branding": {
+      "logoAlt": "Chamber UI",
+      "logoPath": "/logo.svg",
+      "title": "Chamber UI",
+      "tagline": "Connect to AWS to manage your secrets"
+    },
+    "uiLabels": {
+      "awsProfile": "AWS Profile",
+      "awsRegion": "AWS Region",
+      "profilePlaceholder": "Select profile",
+      "regionPlaceholder": "Select region",
+      "connect": "Connect",
+      "loginWithSso": "Login with AWS SSO",
+      "ssoWaiting": "Waiting for browser login…",
+      "footerHint": "SSO opens your browser for authentication, then connects automatically.",
+      "settingsAria": "Settings (gear icon in title bar)"
+    },
+    "profiles": [
+      { "name": "default" },
+      { "name": "acme-prod" },
+      { "name": "acme-staging" },
+      { "name": "acme-dev-personal" },
+      { "name": "legacy-root" }
+    ],
+    "selectedProfile": "acme-staging",
+    "selectTriggerDisplay": {
+      "profile": "acme-staging",
+      "region": "eu-central-1 — Europe (Frankfurt)"
+    },
+    "regions": [
+      { "value": "us-east-1", "label": "us-east-1 — US East (N. Virginia)" },
+      { "value": "us-east-2", "label": "us-east-2 — US East (Ohio)" },
+      { "value": "us-west-1", "label": "us-west-1 — US West (N. California)" },
+      { "value": "us-west-2", "label": "us-west-2 — US West (Oregon)" },
+      { "value": "ca-central-1", "label": "ca-central-1 — Canada (Central)" },
+      { "value": "eu-central-1", "label": "eu-central-1 — Europe (Frankfurt)" },
+      { "value": "eu-west-1", "label": "eu-west-1 — Europe (Ireland)" },
+      { "value": "eu-west-2", "label": "eu-west-2 — Europe (London)" },
+      { "value": "eu-west-3", "label": "eu-west-3 — Europe (Paris)" },
+      { "value": "eu-north-1", "label": "eu-north-1 — Europe (Stockholm)" },
+      { "value": "eu-south-1", "label": "eu-south-1 — Europe (Milan)" },
+      { "value": "ap-northeast-1", "label": "ap-northeast-1 — Asia Pacific (Tokyo)" },
+      { "value": "ap-northeast-2", "label": "ap-northeast-2 — Asia Pacific (Seoul)" },
+      { "value": "ap-northeast-3", "label": "ap-northeast-3 — Asia Pacific (Osaka)" },
+      { "value": "ap-southeast-1", "label": "ap-southeast-1 — Asia Pacific (Singapore)" },
+      { "value": "ap-southeast-2", "label": "ap-southeast-2 — Asia Pacific (Sydney)" },
+      { "value": "ap-south-1", "label": "ap-south-1 — Asia Pacific (Mumbai)" },
+      { "value": "sa-east-1", "label": "sa-east-1 — South America (São Paulo)" },
+      { "value": "me-south-1", "label": "me-south-1 — Middle East (Bahrain)" },
+      { "value": "af-south-1", "label": "af-south-1 — Africa (Cape Town)" }
+    ],
+    "selectedRegion": "eu-central-1",
+    "scenarios": {
+      "idleReady": {
+        "loading": false,
+        "ssoRunning": false,
+        "error": null,
+        "ssoOutput": null
+      },
+      "connectInFlight": {
+        "loading": true,
+        "ssoRunning": false,
+        "error": null,
+        "ssoOutput": null,
+        "note": "Connect shows spinner; SSO button disabled with profile selected"
+      },
+      "ssoBrowserWaiting": {
+        "loading": false,
+        "ssoRunning": true,
+        "error": null,
+        "ssoOutput": null,
+        "note": "Second button label: 'Waiting for browser login…' with spinner"
+      },
+      "ssoCliOutput": {
+        "loading": false,
+        "ssoRunning": true,
+        "error": null,
+        "ssoOutput": "Attempting to automatically open the SSO authorization page in your default browser.\nIf the browser does not open or you wish to use a different device to authorize this request, open the following URL:\n\nhttps://device.sso.eu-central-1.amazonaws.com/\n\nThen enter the code:\n\nABCD-EFGH\n\nAlternatively, you may visit the AWS SSO user portal URL:\n\nhttps://d-9067xx00yy.awsapps.com/start"
+      },
+      "authError": {
+        "loading": false,
+        "ssoRunning": false,
+        "error": "The SSO session associated with this profile has expired or is otherwise invalid. To refresh this SSO session run aws sso login with the corresponding profile.",
+        "ssoOutput": null
+      },
+      "genericInvokeError": {
+        "loading": false,
+        "ssoRunning": false,
+        "error": "chamber: command not found",
+        "ssoOutput": null
+      }
+    },
+    "ssoOutputCompactExample": "SSO login successful."
+  },
+  "mainScreen": {
+    "titlebar": {
+      "tabs": [
+        { "id": "tab-7f2a9c1e-4410-4b6a-9d82-1e904b3a6c10", "servicePath": "acme/web/production", "tabLabel": "Prod web" },
+        { "id": "tab-91b4d005-2a11-4c88-bc7f-0a55e8d12f03", "servicePath": "acme/api/staging", "tabLabel": "acme/api/staging" },
+        { "id": "tab-3c556f8a-9c00-4e1d-bf2a-ccb7a4019d77", "servicePath": "acme/workers/billing", "tabLabel": "Billing worker" }
+      ],
+      "activeTabId": "tab-7f2a9c1e-4410-4b6a-9d82-1e904b3a6c10",
+      "splitView": true,
+      "focusedPanel": "left",
+      "splitLayout": {
+        "leftTabId": "tab-7f2a9c1e-4410-4b6a-9d82-1e904b3a6c10",
+        "rightTabId": "tab-91b4d005-2a11-4c88-bc7f-0a55e8d12f03"
+      }
+    },
+    "sidebar": {
+      "filterPlaceholder": "Filter services…",
+      "serviceSearchExample": "api",
+      "profilesFooter": {
+        "profile": "acme-staging",
+        "region": "eu-central-1",
+        "account": "123456789012"
+      },
+      "services": [
+        "acme/web/production",
+        "acme/web/staging",
+        "acme/api/production",
+        "acme/api/staging",
+        "acme/workers/billing",
+        "acme/workers/notifications",
+        "shared/observability/grafana",
+        "shared/ci/github-token"
+      ],
+      "serviceAliases": {
+        "acme/web/production": "Prod web",
+        "acme/workers/billing": "Billing worker",
+        "shared/observability/grafana": "Grafana"
+      },
+      "selectedServicePath": "acme/web/production",
+      "openInTabsServicePaths": [
+        "acme/web/production",
+        "acme/api/staging",
+        "acme/workers/billing"
+      ]
+    },
+    "secretsTable": {
+      "servicePath": "acme/web/production",
+      "headerTitle": "Prod web",
+      "secretCountLabel": "6 secrets",
+      "searchPlaceholder": "Filter secrets…",
+      "columns": ["Key", "Value", "Actions"],
+      "secrets": [
+        { "key": "DATABASE_URL", "value": "postgres://user:***@db.internal:5432/acme_prod" },
+        { "key": "NEXT_PUBLIC_APP_URL", "value": "https://app.acme.example" },
+        { "key": "SESSION_SECRET", "value": "base64:Q2hhbWJlclVJLW1vY2stc2Vzc2lvbi1zZWNyZXQ=" },
+        { "key": "STRIPE_PUBLISHABLE_KEY", "value": "pk_live_************************" },
+        { "key": "STRIPE_WEBHOOK_SECRET", "value": "whsec_************************" },
+        { "key": "REDIS_URL", "value": "redis://cache.acme.internal:6379/0" }
+      ],
+      "maskedCellDisplay": "••••••••",
+      "keyColumnPercentExample": 38
+    },
+    "rightPanelSecretsTable": {
+      "servicePath": "acme/api/staging",
+      "headerTitle": "acme/api/staging",
+      "secretCountLabel": "4 secrets",
+      "secrets": [
+        { "key": "JWT_ISSUER", "value": "https://auth.staging.acme.example" },
+        { "key": "JWT_AUDIENCE", "value": "acme-api-staging" },
+        { "key": "INTERNAL_SERVICE_TOKEN", "value": "********" },
+        { "key": "FEATURE_FLAGS_JSON", "value": "{\"billing_v2\":true,\"beta_ui\":false}" }
+      ]
+    },
+    "dialogsAndMenus": {
+      "renameServiceDialog": {
+        "title": "Rename service",
+        "description": "Optional display name. The chamber path does not change.",
+        "pathReadonly": "acme/web/production",
+        "aliasDraft": "Production website"
+      },
+      "addSecretDialog": {
+        "title": "Add secret",
+        "keyExample": "BACKUP_ENCRYPTION_KEY",
+        "valueExample": ""
+      },
+      "rowContextActions": [
+        "Rename…",
+        "Open in first tab",
+        "Open in second tab"
+      ],
+      "deleteConfirm": {
+        "title": "Delete secret",
+        "body": "Are you sure you want to delete `STRIPE_WEBHOOK_SECRET`? This cannot be undone."
+      }
+    },
+    "toasts": {
+      "successExamples": ["Secret saved", "Value copied", "Env copied to clipboard", "Secret deleted"],
+      "errorExample": "Network error: …"
+    },
+    "exportClipboardExample": "# acme/web/production\nDATABASE_URL=postgres://user:***@db.internal:5432/acme_prod\nNEXT_PUBLIC_APP_URL=https://app.acme.example\nSESSION_SECRET=base64:Q2hhbWJlclVJLW1vY2stc2Vzc2lvbi1zZWNyZXQ=\n"
+  },
+  "shortLabelsForCaptions": {
+    "login": "Login — profile & region",
+    "loginSsoOutput": "Login — AWS SSO device code / URL box",
+    "loginError": "Login — SSO expired / CLI error state",
+    "secretsSingle": "Secrets — single tab, masked values",
+    "secretsSplit": "Split view — two services side by side",
+    "sidebarActions": "Service row — rename & open in tab",
+    "darkMode": "Dark theme (match useTheme)"
+  }
+}
