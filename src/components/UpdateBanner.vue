@@ -8,8 +8,8 @@
       <div v-if="state === 'available'" class="flex items-center gap-3 px-4 py-3">
         <Download class="h-4 w-4 shrink-0 text-primary" />
         <div class="flex-1 min-w-0">
-          <p class="font-medium">Update available — v{{ update?.version }}</p>
-          <p v-if="update?.body" class="text-xs text-muted-foreground truncate">{{ update.body }}</p>
+          <p class="font-medium">Update available — v{{ updateVersion }}</p>
+          <p v-if="updateBody" class="text-xs text-muted-foreground truncate">{{ updateBody }}</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <Button size="sm" class="h-7 text-xs" @click="install">Install & Restart</Button>
@@ -58,8 +58,10 @@ import { Button } from "@/components/ui/button";
 type State = "idle" | "available" | "downloading" | "error";
 
 const state = ref<State>("idle");
-const update = ref<Update | null>(null);
+const updateVersion = ref("");
+const updateBody = ref("");
 const progress = ref<number | null>(null);
+let pendingUpdate: Update | null = null;
 
 onMounted(async () => {
   // Small delay so the app finishes rendering before the network call
@@ -67,7 +69,9 @@ onMounted(async () => {
   try {
     const result = await check();
     if (result) {
-      update.value = result;
+      pendingUpdate = result;
+      updateVersion.value = result.version;
+      updateBody.value = result.body ?? "";
       state.value = "available";
     }
   } catch {
@@ -76,13 +80,13 @@ onMounted(async () => {
 });
 
 async function install() {
-  if (!update.value) return;
+  if (!pendingUpdate) return;
   state.value = "downloading";
   progress.value = 0;
   let downloaded = 0;
   let total = 0;
   try {
-    await update.value.downloadAndInstall((event) => {
+    await pendingUpdate.downloadAndInstall((event) => {
       if (event.event === "Started") {
         total = event.data.contentLength ?? 0;
       } else if (event.event === "Progress") {
@@ -91,7 +95,8 @@ async function install() {
       }
     });
     await relaunch();
-  } catch {
+  } catch (e) {
+    console.error("[updater] install failed:", e);
     state.value = "error";
   }
 }

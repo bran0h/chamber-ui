@@ -165,7 +165,8 @@ async function installUpdate() {
       }
     });
     await relaunch();
-  } catch {
+  } catch (e) {
+    console.error("[updater] install failed:", e);
     updateState.value = "error";
   }
 }
