@@ -185,16 +185,17 @@ jobs:
           TAG: ${{ github.ref_name }}
           R2: ${{ secrets.R2_PUBLIC_URL }}
         run: |
+          VER="${TAG#v}"
           cat <<EOF > notes.md
           ## Downloads
 
           | Platform | Architecture | Download |
           |----------|-------------|---------|
-          | macOS | Apple Silicon (aarch64) | [chamber-ui-${TAG}.dmg](${R2}/release/darwin/aarch64/chamber-ui-${TAG}.dmg) |
-          | macOS | Intel (x64) | [chamber-ui-${TAG}.dmg](${R2}/release/darwin/x86_64/chamber-ui-${TAG}.dmg) |
-          | Windows | x64 | [chamber-ui-Setup-${TAG}.exe](${R2}/release/windows/x86_64/chamber-ui-Setup-${TAG}.exe) |
-          | Linux | x64 | [chamber-ui-${TAG}.AppImage](${R2}/release/linux/x86_64/chamber-ui-${TAG}.AppImage) |
-          | Linux | aarch64 | [chamber-ui-${TAG}.AppImage](${R2}/release/linux/aarch64/chamber-ui-${TAG}.AppImage) |
+          | macOS | Apple Silicon (aarch64) | [chamber-ui-${VER}.dmg](${R2}/release/darwin/aarch64/chamber-ui-${VER}.dmg) |
+          | macOS | Intel (x64) | [chamber-ui-${VER}.dmg](${R2}/release/darwin/x86_64/chamber-ui-${VER}.dmg) |
+          | Windows | x64 | [chamber-ui-Setup-${VER}.exe](${R2}/release/windows/x86_64/chamber-ui-Setup-${VER}.exe) |
+          | Linux | x64 | [chamber-ui-${VER}.AppImage](${R2}/release/linux/x86_64/chamber-ui-${VER}.AppImage) |
+          | Linux | aarch64 | [chamber-ui-${VER}.AppImage](${R2}/release/linux/aarch64/chamber-ui-${VER}.AppImage) |
           EOF
 
           gh release create "$TAG" \
