@@ -1,0 +1,53 @@
+name: auto-tag
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - src-tauri/tauri.conf.json
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from tauri.conf.json
+        id: pkg
+        run: |
+          VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get latest tag
+        id: latest
+        run: |
+          LATEST=$(git tag --list 'v*.*.*' --sort=-version:refname | head -1)
+          echo "tag=${LATEST:-v0.0.0}" >> $GITHUB_OUTPUT
+
+      - name: Create tag if version is newer
+        run: |
+          NEW="${{ steps.pkg.outputs.tag }}"
+          LATEST="${{ steps.latest.outputs.tag }}"
+
+          if git rev-parse "$NEW" >/dev/null 2>&1; then
+            echo "Tag $NEW already exists — skipping"
+            exit 0
+          fi
+
+          HIGHER=$(printf '%s\n%s\n' "${NEW#v}" "${LATEST#v}" | sort -V | tail -1)
+
+          if [ "$HIGHER" = "${NEW#v}" ] && [ "$NEW" != "$LATEST" ]; then
+            echo "Tagging $NEW (latest was $LATEST)"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$NEW"
+            git push origin "$NEW"
+          else
+            echo "Version $NEW is not newer than $LATEST — skipping"
+          fi

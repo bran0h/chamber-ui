@@ -118,6 +118,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri -- build --target ${{ matrix.job.target }}
 
+      - name: List bundle artifacts
+        shell: bash
+        run: find src-tauri/target/${{ matrix.job.target }}/release/bundle -type f | sort
+
       - name: Organize files (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -135,10 +139,9 @@ jobs:
         run: |
           mkdir -p ${{ matrix.job.bundle }}
           BUNDLE="src-tauri/target/${{ matrix.job.target }}/release/bundle"
-          mv "$BUNDLE/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage"        "${{ matrix.job.bundle }}/chamber-ui.AppImage"
-          mv "$BUNDLE/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.tar.gz" "${{ matrix.job.bundle }}/chamber-ui.AppImage.tar.gz"
-          SIG=$(cat "$BUNDLE/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.tar.gz.sig")
-          echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.AppImage.tar.gz\",\"signature\":\"$SIG\"}" \
+          mv "$BUNDLE/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage" "${{ matrix.job.bundle }}/chamber-ui.AppImage"
+          SIG=$(cat "$BUNDLE/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.sig")
+          echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.AppImage\",\"signature\":\"$SIG\"}" \
             > "${{ matrix.job.bundle }}/latest.json"
           cp "${{ matrix.job.bundle }}/chamber-ui.AppImage" "${{ matrix.job.bundle }}/chamber-ui-${{ env.APP_VERSION }}.AppImage"
 
@@ -148,10 +151,9 @@ jobs:
         run: |
           mkdir -p ${{ matrix.job.bundle }}
           BUNDLE="src-tauri/target/${{ matrix.job.target }}/release/bundle"
-          mv "$BUNDLE/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.exe"      "${{ matrix.job.bundle }}/chamber-ui-Setup.exe"
-          mv "$BUNDLE/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.nsis.zip" "${{ matrix.job.bundle }}/chamber-ui.zip"
-          SIG=$(cat "$BUNDLE/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.nsis.zip.sig")
-          echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.zip\",\"signature\":\"$SIG\"}" \
+          mv "$BUNDLE/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.exe" "${{ matrix.job.bundle }}/chamber-ui-Setup.exe"
+          SIG=$(cat "$BUNDLE/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.exe.sig")
+          echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui-Setup.exe\",\"signature\":\"$SIG\"}" \
             > "${{ matrix.job.bundle }}/latest.json"
           cp "${{ matrix.job.bundle }}/chamber-ui-Setup.exe" "${{ matrix.job.bundle }}/chamber-ui-Setup-${{ env.APP_VERSION }}.exe"
 
@@ -169,3 +171,33 @@ jobs:
 
             # Versioned filenames (e.g. chamber-ui-0.1.0.dmg) are immutable
             (\d+\.)+\w+$    public, max-age=2678400, immutable
+
+  publish:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          R2: ${{ secrets.R2_PUBLIC_URL }}
+        run: |
+          cat <<EOF > notes.md
+          ## Downloads
+
+          | Platform | Architecture | Download |
+          |----------|-------------|---------|
+          | macOS | Apple Silicon (aarch64) | [chamber-ui-${TAG}.dmg](${R2}/release/darwin/aarch64/chamber-ui-${TAG}.dmg) |
+          | macOS | Intel (x64) | [chamber-ui-${TAG}.dmg](${R2}/release/darwin/x86_64/chamber-ui-${TAG}.dmg) |
+          | Windows | x64 | [chamber-ui-Setup-${TAG}.exe](${R2}/release/windows/x86_64/chamber-ui-Setup-${TAG}.exe) |
+          | Linux | x64 | [chamber-ui-${TAG}.AppImage](${R2}/release/linux/x86_64/chamber-ui-${TAG}.AppImage) |
+          | Linux | aarch64 | [chamber-ui-${TAG}.AppImage](${R2}/release/linux/aarch64/chamber-ui-${TAG}.AppImage) |
+          EOF
+
+          gh release create "$TAG" \
+            --repo "${{ github.repository }}" \
+            --title "Chamber UI $TAG" \
+            --notes-file notes.md
