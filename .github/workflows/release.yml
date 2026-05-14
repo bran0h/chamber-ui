@@ -1,0 +1,148 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    name: ${{ matrix.job.name }}
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - name: macOS-x86_64
+            os: macos-14
+            target: x86_64-apple-darwin
+            bundle: release/darwin/x86_64
+            arch: x64
+
+          - name: macOS-aarch64
+            os: macos-14
+            target: aarch64-apple-darwin
+            bundle: release/darwin/aarch64
+            arch: aarch64
+
+          - name: Windows-x86_64
+            os: windows-2022
+            target: x86_64-pc-windows-msvc
+            bundle: release/windows/x86_64
+            arch: x64
+
+          - name: Linux-x86_64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bundle: release/linux/x86_64
+            arch: amd64
+
+          - name: Linux-aarch64
+            os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
+            bundle: release/linux/aarch64
+            arch: aarch64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.job.target }}
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev \
+            librsvg2-dev xdg-utils
+
+      - name: Get App version
+        shell: bash
+        run: echo "APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> $GITHUB_ENV
+
+      - name: Build App
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: npm run tauri -- build --target ${{ matrix.job.target }}
+
+      - name: Organize files (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p ${{ matrix.job.bundle }}
+          DMG="target/${{ matrix.job.target }}/release/bundle/dmg/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.dmg"
+          TAR="target/${{ matrix.job.target }}/release/bundle/macos/chamber-ui.app.tar.gz"
+          mv "$DMG" "${{ matrix.job.bundle }}/chamber-ui.dmg"
+          mv "$TAR" "${{ matrix.job.bundle }}/chamber-ui.app.tar.gz"
+          SIG=$(cat "target/${{ matrix.job.target }}/release/bundle/macos/chamber-ui.app.tar.gz.sig")
+          echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.app.tar.gz\",\"signature\":\"$SIG\"}" \
+            > "${{ matrix.job.bundle }}/latest.json"
+          cp "${{ matrix.job.bundle }}/chamber-ui.dmg" "${{ matrix.job.bundle }}/chamber-ui-${{ env.APP_VERSION }}.dmg"
+
+      - name: Organize files (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p ${{ matrix.job.bundle }}
+          AI="target/${{ matrix.job.target }}/release/bundle/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage"
+          AITAR="target/${{ matrix.job.target }}/release/bundle/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.tar.gz"
+          mv "$AI"    "${{ matrix.job.bundle }}/chamber-ui.AppImage"
+          mv "$AITAR" "${{ matrix.job.bundle }}/chamber-ui.AppImage.tar.gz"
+          SIG=$(cat "target/${{ matrix.job.target }}/release/bundle/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.tar.gz.sig")
+          echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.AppImage.tar.gz\",\"signature\":\"$SIG\"}" \
+            > "${{ matrix.job.bundle }}/latest.json"
+          cp "${{ matrix.job.bundle }}/chamber-ui.AppImage" "${{ matrix.job.bundle }}/chamber-ui-${{ env.APP_VERSION }}.AppImage"
+
+      - name: Organize files (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p ${{ matrix.job.bundle }}
+          EXE="target/${{ matrix.job.target }}/release/bundle/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.exe"
+          ZIP="target/${{ matrix.job.target }}/release/bundle/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.nsis.zip"
+          mv "$EXE" "${{ matrix.job.bundle }}/chamber-ui-Setup.exe"
+          mv "$ZIP" "${{ matrix.job.bundle }}/chamber-ui.zip"
+          SIG=$(cat "target/${{ matrix.job.target }}/release/bundle/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.nsis.zip.sig")
+          echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.zip\",\"signature\":\"$SIG\"}" \
+            > "${{ matrix.job.bundle }}/latest.json"
+          cp "${{ matrix.job.bundle }}/chamber-ui-Setup.exe" "${{ matrix.job.bundle }}/chamber-ui-Setup-${{ env.APP_VERSION }}.exe"
+
+      - name: Upload to R2
+        uses: wyhaya/upload-cloudflare-r2@9ac9d847e87f5674ed5f14c11a2f0f44d8a5c368
+        with:
+          account_id: ${{ secrets.R2_ACCOUNT_ID }}
+          access_key_id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret_access_key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          bucket: ${{ secrets.R2_BUCKET }}
+          source_directory: ${{ matrix.job.bundle }}
+          destination_directory: ${{ matrix.job.bundle }}
+          cache_control: |
+            .*              public, max-age=0, must-revalidate
+
+            # Versioned filenames (e.g. chamber-ui-0.1.0.dmg) are immutable
+            (\d+\.)+\w+$    public, max-age=2678400, immutable
