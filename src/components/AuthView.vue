@@ -1,5 +1,11 @@
 <template>
   <div class="flex min-h-screen items-center justify-center bg-background p-6">
+    <button
+      class="absolute top-3 right-3 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      @click="$emit('open-settings')"
+    >
+      <Settings class="h-4 w-4" />
+    </button>
     <div class="w-full max-w-md space-y-6">
       <div class="space-y-2 text-center">
         <div class="flex justify-center">
@@ -82,7 +88,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { LogIn, Loader2, Globe } from "lucide-vue-next";
+import { LogIn, Loader2, Globe, Settings } from "lucide-vue-next";
 import { useChamberStore } from "@/stores/chamber";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,6 +123,8 @@ const regions = [
   { value: "me-south-1",     label: "me-south-1 — Middle East (Bahrain)" },
   { value: "af-south-1",     label: "af-south-1 — Africa (Cape Town)" },
 ];
+
+defineEmits<{ "open-settings": [] }>();
 
 const store = useChamberStore();
 const ssoRunning = ref(false);

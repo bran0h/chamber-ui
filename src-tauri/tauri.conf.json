@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "chamber-ui",
-  "version": "1.1.4",
-  "identifier": "com.branislavhozza.chamber-ui",
+  "version": "1.2.0",
+  "identifier": "com.bran0h.chamber-ui",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

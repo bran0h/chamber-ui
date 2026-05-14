@@ -1,8 +1,8 @@
 [package]
 name = "chamber-ui"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+version = "1.2.0"
+description = "Chamber CLI UI wrapper"
+authors = ["bran0h"]
 edition = "2021"
 
 [lib]
@@ -16,6 +16,13 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 tauri-plugin-clipboard-manager = "2"
+
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["rt", "rt-multi-thread"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"

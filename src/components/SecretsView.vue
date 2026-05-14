@@ -11,6 +11,7 @@
       @select-service="store.openTab"
       @refresh-services="store.loadServices"
       @logout="store.logout"
+      @open-settings="$emit('open-settings')"
     />
 
     <main class="flex flex-1 flex-col overflow-hidden">
@@ -152,6 +153,8 @@ import {
 } from "@/components/ui/tooltip";
 import AppSidebar from "./AppSidebar.vue";
 import ServicePanel from "./ServicePanel.vue";
+
+defineEmits<{ "open-settings": [] }>();
 
 const store = useChamberStore();
 

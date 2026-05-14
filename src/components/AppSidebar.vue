@@ -100,21 +100,36 @@
         </div>
       </template>
 
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button
-            variant="outline"
-            size="sm"
-            class="w-full"
-            :class="collapsed ? 'px-0 justify-center' : ''"
-            @click="$emit('logout')"
-          >
-            <LogOut class="h-3.5 w-3.5 shrink-0" />
-            <span v-if="!collapsed" class="ml-2">Sign out</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent v-if="collapsed" side="right">Sign out</TooltipContent>
-      </Tooltip>
+      <div :class="collapsed ? '' : 'flex gap-1.5'">
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              variant="outline"
+              size="sm"
+              :class="collapsed ? 'w-full px-0 justify-center' : 'flex-1'"
+              @click="$emit('logout')"
+            >
+              <LogOut class="h-3.5 w-3.5 shrink-0" />
+              <span v-if="!collapsed" class="ml-2">Sign out</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent v-if="collapsed" side="right">Sign out</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              variant="outline"
+              size="sm"
+              :class="collapsed ? 'mt-1 w-full px-0 justify-center' : 'px-2.5'"
+              @click="$emit('open-settings')"
+            >
+              <Settings class="h-3.5 w-3.5 shrink-0" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent :side="collapsed ? 'right' : 'top'">Settings</TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   </aside>
 </template>
@@ -129,6 +144,7 @@ import {
   Loader2,
   LogOut,
   RefreshCw,
+  Settings,
 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,6 +168,7 @@ defineEmits<{
   "select-service": [service: string];
   "refresh-services": [];
   logout: [];
+  "open-settings": [];
 }>();
 
 const collapsed = ref(false);
