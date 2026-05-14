@@ -3,14 +3,8 @@
     <!-- Search bar -->
     <div class="border-b px-4 py-2 bg-card shrink-0">
       <div class="relative max-w-xs">
-        <Search
-          class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
-          v-model="search"
-          placeholder="Filter secrets…"
-          class="pl-8 h-8 text-sm"
-        />
+        <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input v-model="search" placeholder="Filter secrets…" class="pl-8 h-8 text-sm" />
       </div>
     </div>
 
@@ -26,14 +20,9 @@
           <TableRow>
             <TableHead class="relative">
               <span class="pr-3">Key</span>
-              <div
-                role="separator"
-                aria-orientation="vertical"
-                aria-label="Resize columns"
-                tabindex="-1"
+              <div role="separator" aria-orientation="vertical" aria-label="Resize columns" tabindex="-1"
                 class="absolute right-0 top-0 z-10 h-full w-3 max-w-[12px] -translate-x-1/2 cursor-col-resize touch-none hover:bg-primary/15"
-                @mousedown.prevent="startKeyColResize"
-              />
+                @mousedown.prevent="startKeyColResize" />
             </TableHead>
             <TableHead>Value</TableHead>
             <TableHead class="text-right">Actions</TableHead>
@@ -55,68 +44,58 @@
 
           <!-- Data -->
           <template v-else-if="filteredSecrets.length">
-            <TableRow
-              v-for="secret in filteredSecrets"
-              :key="secret.key"
-              class="group"
-            >
+            <TableRow v-for="secret in filteredSecrets" :key="secret.key" class="group">
               <TableCell class="max-w-0 overflow-hidden font-mono text-sm font-medium">
                 <div class="truncate" :title="secret.key">{{ secret.key }}</div>
               </TableCell>
               <TableCell class="max-w-0 overflow-hidden">
                 <div class="flex min-w-0 items-center gap-2">
-                  <span
-                    class="min-w-0 flex-1 truncate font-mono text-sm"
-                    :title="revealed.has(secret.key) ? secret.value : ''"
-                  >
+                  <span class="min-w-0 flex-1 truncate font-mono text-sm"
+                    :title="revealed.has(secret.key) ? secret.value : ''">
                     {{ revealed.has(secret.key) ? secret.value : "••••••••" }}
                   </span>
-                  <button
-                    class="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-                    @click="toggleReveal(secret.key)"
-                  >
-                    <Eye v-if="!revealed.has(secret.key)" class="h-3.5 w-3.5" />
-                    <EyeOff v-else class="h-3.5 w-3.5" />
-                  </button>
                 </div>
               </TableCell>
               <TableCell class="text-right">
                 <div class="flex items-center justify-end gap-1">
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                        @click="$emit('copy', secret.value)"
-                      >
-                        <Copy class="h-3.5 w-3.5" />
+                      <Button variant="ghost"
+                        class="!min-w-6 !h-6 py-0 px-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        @click="toggleReveal(secret.key)">
+                        <Eye v-if="!revealed.has(secret.key)" class="h-3.5 w-3.5" />
+                        <EyeOff v-else class="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent v-if="!revealed.has(secret.key)">Reveal value</TooltipContent>
+                    <TooltipContent v-else>Hide value</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button variant="ghost"
+                        class="!min-w-6 !h-6 py-0 px-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        @click="$emit('copy', secret.value)">
+                        <Copy class="w-full" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Copy value</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                        @click="$emit('edit', secret)"
-                      >
-                        <Pencil class="h-3.5 w-3.5" />
+                      <Button variant="ghost"
+                        class="!min-w-6 !h-6 py-0 px-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        @click="$emit('edit', secret)">
+                        <Pencil class="w-full" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Edit</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        @click="$emit('delete', secret.key)"
-                      >
-                        <Trash2 class="h-3.5 w-3.5" />
+                      <Button variant="ghost"
+                        class="!min-w-6 !h-6 py-0 px-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        @click="$emit('delete', secret.key)">
+                        <Trash2 class="w-full" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Delete</TooltipContent>
@@ -129,9 +108,7 @@
           <!-- Empty -->
           <TableRow v-else>
             <TableCell colspan="3">
-              <div
-                class="flex flex-col items-center justify-center py-12 text-muted-foreground space-y-2"
-              >
+              <div class="flex flex-col items-center justify-center py-12 text-muted-foreground space-y-2">
                 <ShieldOff class="h-8 w-8 opacity-30" />
                 <p class="text-sm">
                   {{
@@ -257,8 +234,8 @@ function startKeyColResize(downEvent: MouseEvent) {
 const filteredSecrets = computed(() =>
   search.value
     ? props.secrets.filter((s) =>
-        s.key.toLowerCase().includes(search.value.toLowerCase()),
-      )
+      s.key.toLowerCase().includes(search.value.toLowerCase()),
+    )
     : props.secrets,
 );
 
