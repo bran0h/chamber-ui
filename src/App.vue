@@ -1,9 +1,11 @@
 <template>
   <TooltipProvider>
-    <AuthView v-if="!store.isAuthenticated" @open-settings="settingsOpen = true" />
-    <SecretsView v-else @open-settings="settingsOpen = true" />
-    <SettingsDialog :open="settingsOpen" @update:open="settingsOpen = $event" />
-    <UpdateBanner />
+    <div class="h-full min-h-0 overflow-hidden">
+      <AuthView v-if="!store.isAuthenticated" @open-settings="settingsOpen = true" />
+      <SecretsView v-else @open-settings="settingsOpen = true" />
+      <SettingsDialog :open="settingsOpen" @update:open="settingsOpen = $event" />
+      <UpdateBanner />
+    </div>
   </TooltipProvider>
 </template>
 

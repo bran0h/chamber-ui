@@ -1,5 +1,5 @@
 <template>
-  <div class="ch-tauri-root flex h-screen min-h-0 flex-col overflow-hidden">
+  <div class="ch-tauri-root flex h-full min-h-0 flex-col overflow-hidden">
     <div class="flex min-h-0 min-w-0 flex-1 overflow-hidden">
       <AppSidebar :services="store.services" :selected-service="store.selectedService"
         :open-services="store.tabs.map((t) => t.service)" :loading="store.loading" :profile="store.selectedProfile"

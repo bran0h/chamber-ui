@@ -53,14 +53,42 @@
   * {
     @apply border-border;
   }
+  /*
+   * Full-viewport app shell; inner views use overflow-auto where needed.
+   * Tauri adds overflow:hidden on html/body/#app via .ch-tauri-chrome to avoid
+   * scrolling past the rounded window into transparent desktop.
+   */
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
 
+  #app {
+    height: 100%;
+    min-height: 0;
+  }
+
   /* Frameless Tauri: let the OS show through outside the rounded shell */
-  html.ch-tauri-chrome,
-  html.ch-tauri-chrome body,
+  html.ch-tauri-chrome {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  html.ch-tauri-chrome body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+
   html.ch-tauri-chrome body > #app {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
     background-color: transparent;
   }
 }
