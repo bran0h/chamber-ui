@@ -80,7 +80,17 @@ jobs:
         shell: bash
         run: echo "APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> $GITHUB_ENV
 
-      - name: Build App
+      # Detect whether Apple signing secrets are configured
+      - name: Check Apple signing
+        if: runner.os == 'macOS'
+        id: apple
+        env:
+          CERT: ${{ secrets.APPLE_CERTIFICATE }}
+        run: echo "has_cert=${{ env.CERT != '' }}" >> $GITHUB_OUTPUT
+
+      # macOS with Apple Developer certificate (notarized)
+      - name: Build App (macOS signed)
+        if: runner.os == 'macOS' && steps.apple.outputs.has_cert == 'true'
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -92,15 +102,30 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: npm run tauri -- build --target ${{ matrix.job.target }}
 
+      # macOS without certificate — produces unsigned DMG (users must right-click → Open)
+      - name: Build App (macOS unsigned)
+        if: runner.os == 'macOS' && steps.apple.outputs.has_cert != 'true'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri -- build --target ${{ matrix.job.target }}
+
+      # Windows / Linux — no Apple vars needed
+      - name: Build App
+        if: runner.os != 'macOS'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri -- build --target ${{ matrix.job.target }}
+
       - name: Organize files (macOS)
         if: runner.os == 'macOS'
         run: |
           mkdir -p ${{ matrix.job.bundle }}
-          DMG="target/${{ matrix.job.target }}/release/bundle/dmg/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.dmg"
-          TAR="target/${{ matrix.job.target }}/release/bundle/macos/chamber-ui.app.tar.gz"
-          mv "$DMG" "${{ matrix.job.bundle }}/chamber-ui.dmg"
-          mv "$TAR" "${{ matrix.job.bundle }}/chamber-ui.app.tar.gz"
-          SIG=$(cat "target/${{ matrix.job.target }}/release/bundle/macos/chamber-ui.app.tar.gz.sig")
+          BUNDLE="src-tauri/target/${{ matrix.job.target }}/release/bundle"
+          mv "$BUNDLE/dmg/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.dmg" "${{ matrix.job.bundle }}/chamber-ui.dmg"
+          mv "$BUNDLE/macos/chamber-ui.app.tar.gz" "${{ matrix.job.bundle }}/chamber-ui.app.tar.gz"
+          SIG=$(cat "$BUNDLE/macos/chamber-ui.app.tar.gz.sig")
           echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.app.tar.gz\",\"signature\":\"$SIG\"}" \
             > "${{ matrix.job.bundle }}/latest.json"
           cp "${{ matrix.job.bundle }}/chamber-ui.dmg" "${{ matrix.job.bundle }}/chamber-ui-${{ env.APP_VERSION }}.dmg"
@@ -109,11 +134,10 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           mkdir -p ${{ matrix.job.bundle }}
-          AI="target/${{ matrix.job.target }}/release/bundle/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage"
-          AITAR="target/${{ matrix.job.target }}/release/bundle/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.tar.gz"
-          mv "$AI"    "${{ matrix.job.bundle }}/chamber-ui.AppImage"
-          mv "$AITAR" "${{ matrix.job.bundle }}/chamber-ui.AppImage.tar.gz"
-          SIG=$(cat "target/${{ matrix.job.target }}/release/bundle/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.tar.gz.sig")
+          BUNDLE="src-tauri/target/${{ matrix.job.target }}/release/bundle"
+          mv "$BUNDLE/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage"        "${{ matrix.job.bundle }}/chamber-ui.AppImage"
+          mv "$BUNDLE/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.tar.gz" "${{ matrix.job.bundle }}/chamber-ui.AppImage.tar.gz"
+          SIG=$(cat "$BUNDLE/appimage/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}.AppImage.tar.gz.sig")
           echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.AppImage.tar.gz\",\"signature\":\"$SIG\"}" \
             > "${{ matrix.job.bundle }}/latest.json"
           cp "${{ matrix.job.bundle }}/chamber-ui.AppImage" "${{ matrix.job.bundle }}/chamber-ui-${{ env.APP_VERSION }}.AppImage"
@@ -123,11 +147,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p ${{ matrix.job.bundle }}
-          EXE="target/${{ matrix.job.target }}/release/bundle/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.exe"
-          ZIP="target/${{ matrix.job.target }}/release/bundle/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.nsis.zip"
-          mv "$EXE" "${{ matrix.job.bundle }}/chamber-ui-Setup.exe"
-          mv "$ZIP" "${{ matrix.job.bundle }}/chamber-ui.zip"
-          SIG=$(cat "target/${{ matrix.job.target }}/release/bundle/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.nsis.zip.sig")
+          BUNDLE="src-tauri/target/${{ matrix.job.target }}/release/bundle"
+          mv "$BUNDLE/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.exe"      "${{ matrix.job.bundle }}/chamber-ui-Setup.exe"
+          mv "$BUNDLE/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.nsis.zip" "${{ matrix.job.bundle }}/chamber-ui.zip"
+          SIG=$(cat "$BUNDLE/nsis/chamber-ui_${{ env.APP_VERSION }}_${{ matrix.job.arch }}-setup.nsis.zip.sig")
           echo "{\"version\":\"${{ env.APP_VERSION }}\",\"url\":\"${{ secrets.R2_PUBLIC_URL }}/${{ matrix.job.bundle }}/chamber-ui.zip\",\"signature\":\"$SIG\"}" \
             > "${{ matrix.job.bundle }}/latest.json"
           cp "${{ matrix.job.bundle }}/chamber-ui-Setup.exe" "${{ matrix.job.bundle }}/chamber-ui-Setup-${{ env.APP_VERSION }}.exe"
