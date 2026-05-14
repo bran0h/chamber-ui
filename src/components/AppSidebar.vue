@@ -4,7 +4,10 @@
     :class="collapsed ? 'w-12' : 'w-64'"
   >
     <!-- Header -->
-    <div class="flex items-center border-b h-[49px]" :class="collapsed ? 'justify-center' : 'px-3 gap-2'">
+    <div
+      class="flex items-center border-b h-[49px]"
+      :class="collapsed ? 'justify-center' : 'px-3 gap-2'"
+    >
       <template v-if="!collapsed">
         <img src="/logo.svg" class="h-5 w-5 shrink-0" alt="" />
         <span class="font-semibold text-sm truncate flex-1">Chamber UI</span>
@@ -22,13 +25,28 @@
     <!-- Search + refresh (expanded only) -->
     <div v-if="!collapsed" class="px-3 pt-3 pb-2 flex items-center gap-1.5">
       <div class="relative flex-1">
-        <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input v-model="serviceSearch" placeholder="Filter services…" class="pl-8 h-8 text-sm" />
+        <Search
+          class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          v-model="serviceSearch"
+          placeholder="Filter services…"
+          class="pl-8 h-8 text-sm"
+        />
       </div>
       <Tooltip>
         <TooltipTrigger as-child>
-          <Button variant="outline" size="icon" class="h-8 w-8 shrink-0" :disabled="loading" @click="$emit('refresh-services')">
-            <RefreshCw class="h-3.5 w-3.5" :class="loading ? 'animate-spin' : ''" />
+          <Button
+            variant="outline"
+            size="icon"
+            class="h-8 w-8 shrink-0"
+            :disabled="loading"
+            @click="$emit('refresh-services')"
+          >
+            <RefreshCw
+              class="h-3.5 w-3.5"
+              :class="loading ? 'animate-spin' : ''"
+            />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Refresh services</TooltipContent>
@@ -45,16 +63,26 @@
         v-for="svc in filteredServices"
         :key="svc"
         class="w-full rounded-md text-sm text-left transition-colors flex items-center gap-2 px-3 py-2"
-        :class="selectedService === svc
-          ? 'bg-primary text-primary-foreground font-medium'
-          : 'hover:bg-muted text-foreground'"
+        :class="
+          selectedService === svc
+            ? 'bg-primary text-primary-foreground font-medium'
+            : 'hover:bg-muted text-foreground'
+        "
         @click="$emit('select-service', svc)"
       >
         <Database class="h-3.5 w-3.5 shrink-0" />
-        <span class="truncate">{{ svc }}</span>
+        <span class="truncate flex-1">{{ svc }}</span>
+        <!-- Dot indicator: service is open as a tab but not currently selected -->
+        <span
+          v-if="openServices.includes(svc) && selectedService !== svc"
+          class="h-1.5 w-1.5 rounded-full bg-primary/50 shrink-0"
+        />
       </button>
 
-      <div v-if="!loading && !filteredServices.length" class="px-2 py-2 text-xs text-muted-foreground">
+      <div
+        v-if="!loading && !filteredServices.length"
+        class="px-2 py-2 text-xs text-muted-foreground"
+      >
         {{ serviceSearch ? "No matches" : "No services found" }}
       </div>
     </div>
@@ -66,7 +94,9 @@
       <template v-if="!collapsed">
         <div class="rounded-md bg-muted/50 px-3 py-2 text-xs">
           <div class="font-medium text-foreground truncate">{{ profile }}</div>
-          <div class="text-muted-foreground truncate">{{ region }} · {{ account }}</div>
+          <div class="text-muted-foreground truncate">
+            {{ region }} · {{ account }}
+          </div>
         </div>
       </template>
 
@@ -91,14 +121,27 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { ChevronLeft, ChevronRight, Search, Database, Loader2, LogOut, RefreshCw } from "lucide-vue-next";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Database,
+  Loader2,
+  LogOut,
+  RefreshCw,
+} from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const props = defineProps<{
   services: string[];
   selectedService: string;
+  openServices: string[];
   loading: boolean;
   profile: string;
   region: string;
@@ -116,7 +159,9 @@ const serviceSearch = ref("");
 
 const filteredServices = computed(() =>
   serviceSearch.value
-    ? props.services.filter((s) => s.toLowerCase().includes(serviceSearch.value.toLowerCase()))
-    : props.services
+    ? props.services.filter((s) =>
+        s.toLowerCase().includes(serviceSearch.value.toLowerCase()),
+      )
+    : props.services,
 );
 </script>

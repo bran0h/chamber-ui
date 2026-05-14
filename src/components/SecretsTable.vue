@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col flex-1 overflow-hidden">
+  <div class="flex flex-col flex-1 overflow-hidden min-w-0">
     <!-- Search bar -->
-    <div class="border-b px-6 py-2 bg-card shrink-0">
+    <div class="border-b px-4 py-2 bg-card shrink-0">
       <div class="relative max-w-xs">
         <Search
           class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
@@ -16,12 +16,12 @@
 
     <!-- Table -->
     <div class="flex-1 overflow-auto">
-      <Table>
+      <Table class="min-w-[480px]">
         <TableHeader>
           <TableRow>
             <TableHead class="w-[40%]">Key</TableHead>
             <TableHead>Value</TableHead>
-            <TableHead class="w-24 text-right">Actions</TableHead>
+            <TableHead class="w-[88px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -49,12 +49,12 @@
                 secret.key
               }}</TableCell>
               <TableCell>
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-sm truncate max-w-xs">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="font-mono text-sm truncate">
                     {{ revealed.has(secret.key) ? secret.value : "••••••••" }}
                   </span>
                   <button
-                    class="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                    class="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                     @click="toggleReveal(secret.key)"
                   >
                     <Eye v-if="!revealed.has(secret.key)" class="h-3.5 w-3.5" />
@@ -63,15 +63,13 @@
                 </div>
               </TableCell>
               <TableCell class="text-right">
-                <div
-                  class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
+                <div class="flex items-center justify-end gap-0.5">
                   <Tooltip>
                     <TooltipTrigger as-child>
                       <Button
                         variant="ghost"
                         size="icon"
-                        class="h-7 w-7"
+                        class="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
                         @click="$emit('copy', secret.value)"
                       >
                         <Copy class="h-3.5 w-3.5" />
@@ -84,7 +82,7 @@
                       <Button
                         variant="ghost"
                         size="icon"
-                        class="h-7 w-7"
+                        class="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
                         @click="$emit('edit', secret)"
                       >
                         <Pencil class="h-3.5 w-3.5" />
@@ -97,7 +95,7 @@
                       <Button
                         variant="ghost"
                         size="icon"
-                        class="h-7 w-7 text-destructive hover:text-destructive"
+                        class="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                         @click="$emit('delete', secret.key)"
                       >
                         <Trash2 class="h-3.5 w-3.5" />
@@ -134,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import {
   Search,
   Eye,
@@ -164,6 +162,7 @@ import {
 const props = defineProps<{
   secrets: Secret[];
   loading: boolean;
+  revealAll: boolean;
 }>();
 
 defineEmits<{
@@ -181,6 +180,15 @@ const filteredSecrets = computed(() =>
         s.key.toLowerCase().includes(search.value.toLowerCase()),
       )
     : props.secrets,
+);
+
+watch(
+  () => props.revealAll,
+  (val) => {
+    revealed.value = val
+      ? new Set(props.secrets.map((s) => s.key))
+      : new Set();
+  },
 );
 
 function toggleReveal(key: string) {

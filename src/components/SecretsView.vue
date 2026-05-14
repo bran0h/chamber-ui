@@ -3,41 +3,124 @@
     <AppSidebar
       :services="store.services"
       :selected-service="store.selectedService"
+      :open-services="store.tabs.map((t) => t.service)"
       :loading="store.loading"
       :profile="store.selectedProfile"
       :region="store.region"
       :account="store.authAccount"
-      @select-service="store.selectService"
+      @select-service="store.openTab"
       @refresh-services="store.loadServices"
       @logout="store.logout"
     />
 
     <main class="flex flex-1 flex-col overflow-hidden">
-      <!-- Empty state -->
-      <div v-if="!store.selectedService" class="flex flex-1 items-center justify-center text-muted-foreground">
-        <div class="text-center space-y-2">
-          <Database class="mx-auto h-10 w-10 opacity-30" />
-          <p class="text-sm">Select a service to view secrets</p>
+      <!-- Tab bar -->
+      <div
+        class="flex items-center border-b bg-card shrink-0 h-[49px] px-2 gap-1"
+      >
+        <!-- Tab list -->
+        <div class="flex items-center gap-1 flex-1 overflow-x-auto min-w-0">
+          <div
+            v-for="tab in store.tabs"
+            :key="tab.id"
+            class="flex items-center gap-1.5 shrink-0 rounded-md px-2.5 py-1 text-sm cursor-pointer transition-colors group select-none"
+            :class="
+              isTabActive(tab.id)
+                ? 'bg-muted text-foreground font-medium'
+                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+            "
+            @click="handleTabClick(tab.id)"
+          >
+            <Database class="h-3.5 w-3.5 shrink-0 opacity-60" />
+            <span class="max-w-[160px] truncate">{{ tab.service }}</span>
+            <button
+              class="rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 transition-opacity ml-0.5"
+              @click.stop="store.closeTab(tab.id)"
+            >
+              <X class="h-3 w-3" />
+            </button>
+          </div>
+
+          <span
+            v-if="!store.tabs.length"
+            class="text-xs text-muted-foreground px-2 select-none"
+          >
+            Select a service to open a tab
+          </span>
         </div>
+
+        <!-- Split view toggle -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-7 w-7 shrink-0"
+              :class="store.splitView ? 'text-primary bg-primary/10' : ''"
+              @click="store.toggleSplit()"
+            >
+              <Columns2 class="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {{ store.splitView ? "Disable split view" : "Enable split view" }}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
-      <template v-else>
-        <SecretsHeader
-          :service="store.selectedService"
-          :count="store.secrets.length"
-          :loading="store.secretsLoading"
-          @refresh="store.loadSecrets"
-          @export-env="exportEnv"
-          @add="openAdd"
-        />
-        <SecretsTable
-          :secrets="store.secrets"
-          :loading="store.secretsLoading"
-          @copy="copyValue"
-          @edit="openEdit"
-          @delete="confirmDelete"
-        />
-      </template>
+      <!-- Content area -->
+      <div class="flex flex-1 overflow-hidden">
+        <!-- Left panel -->
+        <div
+          class="flex flex-col overflow-hidden flex-1"
+          :class="store.splitView ? 'border-r' : ''"
+          @mousedown="store.setFocusedSide('left')"
+        >
+          <div
+            v-if="store.splitView"
+            class="flex items-center gap-1 px-3 h-8 shrink-0 border-b text-xs font-medium transition-colors"
+            :class="
+              store.focusedSide === 'left'
+                ? 'text-primary border-b-primary/30 bg-primary/5'
+                : 'text-muted-foreground'
+            "
+          >
+            <PanelLeft class="h-3 w-3" />
+            Left
+          </div>
+          <ServicePanel
+            :tab-id="store.activeTabId"
+            :focused="store.focusedSide === 'left'"
+            @toast="showToast"
+            @focus="store.setFocusedSide('left')"
+          />
+        </div>
+
+        <!-- Right panel -->
+        <div
+          v-if="store.splitView"
+          class="flex flex-col overflow-hidden flex-1"
+          @mousedown="store.setFocusedSide('right')"
+        >
+          <div
+            class="flex items-center gap-1 px-3 h-8 shrink-0 border-b text-xs font-medium transition-colors"
+            :class="
+              store.focusedSide === 'right'
+                ? 'text-primary border-b-primary/30 bg-primary/5'
+                : 'text-muted-foreground'
+            "
+          >
+            <PanelRight class="h-3 w-3" />
+            Right
+          </div>
+          <ServicePanel
+            :tab-id="store.splitTabId"
+            :focused="store.focusedSide === 'right'"
+            @toast="showToast"
+            @focus="store.setFocusedSide('right')"
+          />
+        </div>
+      </div>
     </main>
 
     <!-- Toast -->
@@ -45,133 +128,60 @@
       <div
         v-if="toast.message"
         class="fixed bottom-4 right-4 rounded-md px-4 py-2 text-sm shadow-lg z-50 max-w-sm"
-        :class="toast.type === 'error'
-          ? 'bg-destructive text-destructive-foreground'
-          : 'bg-foreground text-background'"
+        :class="
+          toast.type === 'error'
+            ? 'bg-destructive text-destructive-foreground'
+            : 'bg-foreground text-background'
+        "
       >
         {{ toast.message }}
       </div>
     </Transition>
-
-    <!-- Add / Edit dialog -->
-    <SecretDialog
-      v-if="dialogOpen"
-      :open="dialogOpen"
-      :initial-key="editSecret?.key"
-      :initial-value="editSecret?.value"
-      @update:open="dialogOpen = $event"
-      @saved="showToast('Secret saved')"
-      @error="showToast($event, 'error')"
-    />
-
-    <!-- Delete confirmation -->
-    <AlertDialog :open="!!deleteKey" @update:open="deleteKey = ''">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete secret</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete
-            <code class="font-mono font-semibold">{{ deleteKey }}</code>?
-            This cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel @click="deleteKey = ''">Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            class="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2"
-            :disabled="deleting"
-            @click.prevent="doDelete"
-          >
-            <Loader2 v-if="deleting" class="h-3.5 w-3.5 animate-spin" />
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { Database, Loader2 } from "lucide-vue-next";
-import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { useChamberStore, type Secret } from "@/stores/chamber";
+import { ref } from "vue";
+import { Database, X, Columns2, PanelLeft, PanelRight } from "lucide-vue-next";
+import { useChamberStore } from "@/stores/chamber";
+import { Button } from "@/components/ui/button";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import AppSidebar from "./AppSidebar.vue";
-import SecretsHeader from "./SecretsHeader.vue";
-import SecretsTable from "./SecretsTable.vue";
-import SecretDialog from "./SecretDialog.vue";
+import ServicePanel from "./ServicePanel.vue";
 
 const store = useChamberStore();
 
-const dialogOpen = ref(false);
-const editSecret = ref<Secret | null>(null);
-const deleteKey = ref("");
-const deleting = ref(false);
 const toast = ref({ message: "", type: "success" as "success" | "error" });
-
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 function showToast(message: string, type: "success" | "error" = "success") {
   if (toastTimer) clearTimeout(toastTimer);
   toast.value = { message, type };
-  toastTimer = setTimeout(() => (toast.value = { message: "", type: "success" }), 3000);
+  toastTimer = setTimeout(
+    () => (toast.value = { message: "", type: "success" }),
+    3000,
+  );
 }
 
-watch(() => store.error, (err) => {
-  if (err) showToast(err, "error");
-});
-
-function openAdd() {
-  editSecret.value = null;
-  dialogOpen.value = true;
+function isTabActive(tabId: string): boolean {
+  return store.activeTabId === tabId || store.splitTabId === tabId;
 }
 
-function openEdit(secret: Secret) {
-  editSecret.value = secret;
-  dialogOpen.value = true;
-}
-
-function confirmDelete(key: string) {
-  deleteKey.value = key;
-}
-
-async function doDelete() {
-  deleting.value = true;
-  try {
-    await store.deleteSecret(deleteKey.value);
-    showToast("Secret deleted");
-  } catch (e) {
-    showToast(String(e), "error");
-  } finally {
-    deleting.value = false;
-    deleteKey.value = "";
-  }
-}
-
-async function copyValue(value: string) {
-  await writeText(value);
-  showToast("Value copied");
-}
-
-async function exportEnv() {
-  try {
-    const env = await store.exportEnv();
-    await writeText(env);
-    showToast("Env copied to clipboard");
-  } catch (e) {
-    showToast(String(e), "error");
-  }
+function handleTabClick(tabId: string) {
+  store.setActiveTab(tabId, store.splitView ? store.focusedSide : "left");
 }
 </script>
 
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
 }
 .fade-enter-from,
 .fade-leave-to {

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed, nextTick } from "vue";
+import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 
 export interface Secret {
@@ -11,6 +11,13 @@ export interface AwsProfile {
   name: string;
 }
 
+export interface Tab {
+  id: string;
+  service: string;
+  secrets: Secret[];
+  loading: boolean;
+}
+
 export const useChamberStore = defineStore("chamber", () => {
   const profiles = ref<AwsProfile[]>([]);
   const selectedProfile = ref("");
@@ -18,13 +25,31 @@ export const useChamberStore = defineStore("chamber", () => {
   const isAuthenticated = ref(false);
   const authAccount = ref("");
   const services = ref<string[]>([]);
-  const selectedService = ref("");
-  const secrets = ref<Secret[]>([]);
   const loading = ref(false);
-  const secretsLoading = ref(false);
   const error = ref("");
 
-  const filteredSecrets = computed(() => secrets.value);
+  // Tab state
+  const tabs = ref<Tab[]>([]);
+  const activeTabId = ref<string | null>(null);
+  const splitTabId = ref<string | null>(null);
+  const splitView = ref(false);
+  const focusedSide = ref<"left" | "right">("left");
+
+  const activeTab = computed(() =>
+    tabs.value.find((t) => t.id === activeTabId.value) ?? null,
+  );
+
+  const splitTab = computed(() =>
+    tabs.value.find((t) => t.id === splitTabId.value) ?? null,
+  );
+
+  // Reflects the active service in the currently focused panel (used by sidebar highlight)
+  const selectedService = computed(() => {
+    if (focusedSide.value === "right" && splitView.value) {
+      return splitTab.value?.service ?? activeTab.value?.service ?? "";
+    }
+    return activeTab.value?.service ?? "";
+  });
 
   async function loadProfileRegion(profile: string) {
     const r = await invoke<string | null>("get_profile_region", { profile });
@@ -96,89 +121,162 @@ export const useChamberStore = defineStore("chamber", () => {
     }
   }
 
-  function selectService(service: string) {
-    selectedService.value = service;
-    secrets.value = [];
-    error.value = "";
-    secretsLoading.value = true;
-    // nextTick ensures Vue flushes the skeleton to the DOM before invoke fires
-    nextTick(loadSecrets);
+  function openTab(service: string) {
+    let tab = tabs.value.find((t) => t.service === service);
+    if (!tab) {
+      tab = { id: crypto.randomUUID(), service, secrets: [], loading: false };
+      tabs.value.push(tab);
+      loadSecretsForTab(tab.id);
+    }
+    if (!splitView.value || focusedSide.value === "left") {
+      activeTabId.value = tab.id;
+      focusedSide.value = "left";
+    } else {
+      splitTabId.value = tab.id;
+    }
   }
 
-  async function loadSecrets() {
-    if (!selectedService.value) return;
-    secretsLoading.value = true;
+  function closeTab(tabId: string) {
+    const idx = tabs.value.findIndex((t) => t.id === tabId);
+    if (idx === -1) return;
+    tabs.value.splice(idx, 1);
+
+    if (activeTabId.value === tabId) {
+      activeTabId.value =
+        tabs.value.find((t) => t.id !== splitTabId.value)?.id ??
+        tabs.value[0]?.id ??
+        null;
+    }
+    if (splitTabId.value === tabId) {
+      splitTabId.value =
+        tabs.value.find((t) => t.id !== activeTabId.value)?.id ?? null;
+      if (!splitTabId.value) splitView.value = false;
+    }
+    if (tabs.value.length === 0) {
+      splitView.value = false;
+      focusedSide.value = "left";
+    }
+  }
+
+  function setActiveTab(tabId: string, side: "left" | "right") {
+    if (side === "left") {
+      activeTabId.value = tabId;
+    } else {
+      splitTabId.value = tabId;
+    }
+    focusedSide.value = side;
+  }
+
+  function toggleSplit() {
+    if (!splitView.value) {
+      splitTabId.value =
+        tabs.value.find((t) => t.id !== activeTabId.value)?.id ??
+        activeTabId.value ??
+        null;
+      splitView.value = true;
+      focusedSide.value = "right";
+    } else {
+      splitView.value = false;
+      splitTabId.value = null;
+      focusedSide.value = "left";
+    }
+  }
+
+  function setFocusedSide(side: "left" | "right") {
+    focusedSide.value = side;
+  }
+
+  async function loadSecretsForTab(tabId: string) {
+    const tab = tabs.value.find((t) => t.id === tabId);
+    if (!tab) return;
+    tab.loading = true;
     error.value = "";
     try {
-      secrets.value = await invoke<Secret[]>("read_secrets", {
-        service: selectedService.value,
+      tab.secrets = await invoke<Secret[]>("read_secrets", {
+        service: tab.service,
         profile: selectedProfile.value,
         region: region.value,
       });
     } catch (e) {
       error.value = String(e);
-      secrets.value = [];
+      tab.secrets = [];
     } finally {
-      secretsLoading.value = false;
+      tab.loading = false;
     }
   }
 
-  async function writeSecret(key: string, value: string) {
+  async function writeSecret(tabId: string, key: string, value: string) {
+    const tab = tabs.value.find((t) => t.id === tabId);
+    if (!tab) return;
     error.value = "";
     await invoke("write_secret", {
-      service: selectedService.value,
+      service: tab.service,
       key,
       value,
       profile: selectedProfile.value,
       region: region.value,
     });
-    await pollUntilCondition((fresh) => fresh.find((s) => s.key === key)?.value === value);
+    await pollUntilCondition(
+      tabId,
+      (fresh) => fresh.find((s) => s.key === key)?.value === value,
+    );
   }
 
-  async function deleteSecret(key: string) {
+  async function deleteSecret(tabId: string, key: string) {
+    const tab = tabs.value.find((t) => t.id === tabId);
+    if (!tab) return;
     error.value = "";
     await invoke("delete_secret", {
-      service: selectedService.value,
+      service: tab.service,
       key,
       profile: selectedProfile.value,
       region: region.value,
     });
-    await pollUntilCondition((fresh) => !fresh.some((s) => s.key === key));
+    await pollUntilCondition(tabId, (fresh) => !fresh.some((s) => s.key === key));
   }
 
   async function pollUntilCondition(
+    tabId: string,
     check: (secrets: Secret[]) => boolean,
     maxRetries = 5,
-    intervalMs = 3000
+    intervalMs = 3000,
   ) {
-    const service = selectedService.value;
-    secretsLoading.value = true;
+    const tab = tabs.value.find((t) => t.id === tabId);
+    if (!tab) return;
+    const service = tab.service;
+    tab.loading = true;
     try {
       for (let i = 0; i < maxRetries; i++) {
         await new Promise((r) => setTimeout(r, intervalMs));
-        if (selectedService.value !== service) return;
+        const current = tabs.value.find((t) => t.id === tabId);
+        if (!current || current.service !== service) return;
         const fresh = await invoke<Secret[]>("read_secrets", {
           service,
           profile: selectedProfile.value,
           region: region.value,
         });
         if (check(fresh)) {
-          secrets.value = fresh;
+          current.secrets = fresh;
           return;
         }
         if (i === maxRetries - 1) {
-          secrets.value = fresh;
-          throw new Error("Secret did not update after multiple retries — please refresh manually.");
+          current.secrets = fresh;
+          throw new Error(
+            "Secret did not update after multiple retries — please refresh manually.",
+          );
         }
       }
     } finally {
-      secretsLoading.value = false;
+      const current = tabs.value.find((t) => t.id === tabId);
+      if (current) current.loading = false;
     }
   }
 
-  async function exportEnv(): Promise<string> {
+  async function exportEnv(tabId: string): Promise<string> {
+    const tab = tabs.value.find((t) => t.id === tabId);
+    if (!tab) throw new Error("Tab not found");
     return invoke<string>("export_env", {
-      service: selectedService.value,
+      service: tab.service,
       profile: selectedProfile.value,
       region: region.value,
     });
@@ -188,9 +286,12 @@ export const useChamberStore = defineStore("chamber", () => {
     isAuthenticated.value = false;
     authAccount.value = "";
     services.value = [];
-    selectedService.value = "";
-    secrets.value = [];
     error.value = "";
+    tabs.value = [];
+    activeTabId.value = null;
+    splitTabId.value = null;
+    splitView.value = false;
+    focusedSide.value = "left";
   }
 
   return {
@@ -200,19 +301,27 @@ export const useChamberStore = defineStore("chamber", () => {
     isAuthenticated,
     authAccount,
     services,
-    selectedService,
-    secrets,
-    filteredSecrets,
     loading,
-    secretsLoading,
     error,
+    tabs,
+    activeTabId,
+    splitTabId,
+    splitView,
+    focusedSide,
+    activeTab,
+    splitTab,
+    selectedService,
     loadProfiles,
     loadProfileRegion,
     ssoLogin,
     authenticate,
     loadServices,
-    selectService,
-    loadSecrets,
+    openTab,
+    closeTab,
+    setActiveTab,
+    toggleSplit,
+    setFocusedSide,
+    loadSecretsForTab,
     writeSecret,
     deleteSecret,
     exportEnv,

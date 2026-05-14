@@ -4,7 +4,11 @@
       <DialogHeader>
         <DialogTitle>{{ isEdit ? "Edit Secret" : "New Secret" }}</DialogTitle>
         <DialogDescription>
-          {{ isEdit ? `Updating value for "${initialKey}"` : `Add a new secret to service "${store.selectedService}"` }}
+          {{
+            isEdit
+              ? `Updating value for "${initialKey}"`
+              : `Add a new secret to service "${serviceName}"`
+          }}
         </DialogDescription>
       </DialogHeader>
 
@@ -42,11 +46,12 @@
             </button>
           </div>
         </div>
-
       </div>
 
       <DialogFooter>
-        <Button variant="outline" @click="$emit('update:open', false)">Cancel</Button>
+        <Button variant="outline" @click="$emit('update:open', false)"
+          >Cancel</Button
+        >
         <Button :disabled="!form.key || !form.value || saving" @click="submit">
           <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
           {{ isEdit ? "Save" : "Add" }}
@@ -74,6 +79,8 @@ import {
 
 const props = defineProps<{
   open: boolean;
+  tabId: string;
+  serviceName: string;
   initialKey?: string;
   initialValue?: string;
 }>();
@@ -98,17 +105,20 @@ watch(
   () => props.open,
   (val) => {
     if (val) {
-      form.value = { key: props.initialKey ?? "", value: props.initialValue ?? "" };
+      form.value = {
+        key: props.initialKey ?? "",
+        value: props.initialValue ?? "",
+      };
       showValue.value = false;
     }
-  }
+  },
 );
 
 async function submit() {
   if (!form.value.key || !form.value.value) return;
   saving.value = true;
   try {
-    await store.writeSecret(form.value.key, form.value.value);
+    await store.writeSecret(props.tabId, form.value.key, form.value.value);
     emit("saved");
     emit("update:open", false);
   } catch (e) {
