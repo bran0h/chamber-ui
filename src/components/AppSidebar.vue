@@ -2,30 +2,41 @@
   <aside
     class="ch-sidebar flex shrink-0 flex-col overflow-hidden border-r border-border bg-transparent transition-all duration-200 ease-in-out"
     :class="collapsed ? 'sidebar-narrow w-12' : 'w-64'">
-    <!-- Header: drag on logo/title; collapse control stays clickable -->
-    <div class="ch-sidebar-titlebar px-3 flex h-[49px] shrink-0 items-center border-b border-border"
-      :class="collapsed ? 'justify-center' : 'gap-2'">
+    <!-- Header: drag on elements that receive the pointer (Tauri hit-tests target node) -->
+    <div
+      class="ch-sidebar-titlebar flex h-[49px] shrink-0 select-none items-center border-b border-border px-3"
+      :class="collapsed ? '' : 'gap-2'"
+    >
       <template v-if="!collapsed">
-        <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden self-stretch" data-tauri-drag-region>
+        <div
+          class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden self-stretch"
+          data-tauri-drag-region
+        >
           <img src="/logo.svg" class="h-5 w-5 shrink-0 dark:invert pointer-events-none" alt="" />
-          <span class="min-w-0 truncate text-sm font-semibold select-none pointer-events-none">
+          <span class="min-w-0 truncate text-sm font-semibold pointer-events-none">
             Chamber UI
           </span>
         </div>
-        <button type="button"
+        <button
+          type="button"
           class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          @click="collapsed = !collapsed">
+          data-tauri-drag-region="false"
+          @click="collapsed = !collapsed"
+        >
           <ChevronLeft class="h-4 w-4" />
         </button>
       </template>
       <template v-else>
-        <div class="min-w-2 flex-1 self-stretch" data-tauri-drag-region />
-        <button type="button"
+        <div class="min-h-9 min-w-0 flex-1 self-stretch" data-tauri-drag-region />
+        <button
+          type="button"
           class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          @click="collapsed = !collapsed">
+          data-tauri-drag-region="false"
+          @click="collapsed = !collapsed"
+        >
           <ChevronRight class="h-4 w-4" />
         </button>
-        <div class="min-w-2 flex-1 self-stretch" data-tauri-drag-region />
+        <div class="min-h-9 min-w-0 flex-1 self-stretch" data-tauri-drag-region />
       </template>
     </div>
 

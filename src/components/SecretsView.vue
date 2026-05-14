@@ -7,10 +7,16 @@
         @refresh-services="store.loadServices" @logout="store.logout" @open-settings="$emit('open-settings')" />
 
       <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
-        <!-- Tab strip + window drag region + custom window controls (frameless) -->
-        <div class="ch-tab-titlebar flex h-[49px] shrink-0 items-center gap-1 border-b bg-card px-2">
+        <!-- Tab strip: drag empty chrome; tab strip & buttons opt out (frameless) -->
+        <div
+          class="ch-tab-titlebar flex h-[49px] shrink-0 select-none items-center gap-1 border-b bg-card px-2"
+          data-tauri-drag-region
+        >
           <!-- Tab list -->
-          <div class="scrollbar-none flex min-h-0 min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+          <div
+            class="scrollbar-none flex min-h-0 min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+            data-tauri-drag-region="false"
+          >
             <div v-for="tab in store.tabs" :key="tab.id"
               class="group flex shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-md px-2.5 py-1 text-sm transition-colors"
               :class="isTabActive(tab.id)
@@ -33,20 +39,21 @@
             </span>
           </div>
 
+          <div data-tauri-drag-region="false" class="flex shrink-0 items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0"
+                  :class="store.splitView ? 'bg-primary/10 text-primary' : ''" @click="store.toggleSplit()">
+                  <Columns2 class="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {{ store.splitView ? "Disable split view" : "Enable split view" }}
+              </TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0"
-                :class="store.splitView ? 'bg-primary/10 text-primary' : ''" @click="store.toggleSplit()">
-                <Columns2 class="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {{ store.splitView ? "Disable split view" : "Enable split view" }}
-            </TooltipContent>
-          </Tooltip>
-
-          <WindowTitleControls />
+            <WindowTitleControls />
+          </div>
         </div>
 
         <!-- Content area -->

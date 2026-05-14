@@ -1,15 +1,19 @@
 <template>
   <div class="ch-tauri-root flex h-screen min-h-0 flex-col overflow-hidden">
-    <div class="flex h-9 shrink-0 items-center gap-1 border-b bg-card px-1 pr-2">
+    <div
+      class="flex h-9 shrink-0 select-none items-center gap-1 border-b bg-card px-1 pr-2"
+    >
       <div class="min-h-9 min-w-0 flex-1 self-stretch" data-tauri-drag-region />
-      <WindowTitleControls />
-      <button
-        type="button"
-        class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        @click="$emit('open-settings')"
-      >
-        <Settings class="h-4 w-4" />
-      </button>
+      <div data-tauri-drag-region="false" class="flex shrink-0 items-center gap-1">
+        <WindowTitleControls />
+        <button
+          type="button"
+          class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          @click="$emit('open-settings')"
+        >
+          <Settings class="h-4 w-4" />
+        </button>
+      </div>
     </div>
     <div class="relative flex min-h-0 flex-1 items-center justify-center bg-background p-6">
       <div class="w-full max-w-md space-y-6">

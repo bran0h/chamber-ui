@@ -1,5 +1,9 @@
 <template>
-  <div v-if="isTauri" class="flex shrink-0 items-center gap-0.5">
+  <div
+    v-if="isTauri"
+    class="flex shrink-0 items-center gap-0.5"
+    data-tauri-drag-region="false"
+  >
     <Tooltip>
       <TooltipTrigger as-child>
         <button
